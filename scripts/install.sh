@@ -42,12 +42,17 @@ blacklist rtl2830
 EOF
 modprobe -r dvb_usb_rtl28xxu 2>/dev/null || true
 
-# ── 3. Install dump1090-fa ─────────────────────────────────────────────────
+# ── 3. Install dump1090-fa & piaware ───────────────────────────────────────
 if ! command -v dump1090-fa &>/dev/null; then
-    info "Installing dump1090-fa (FlightAware ADS-B decoder)..."
-    wget -qO- https://flightaware.com/adsb/piaware/install | bash -s
-    apt-get install -y dump1090-fa 2>/dev/null || \
-        warn "Could not install dump1090-fa automatically — install manually from FlightAware PPA"
+    info "Installing FlightAware APT repository..."
+    wget -q https://www.flightaware.com/adsb/piaware/files/packages/pool/piaware/f/flightaware-apt-repository/flightaware-apt-repository_1.3_all.deb
+    dpkg -i flightaware-apt-repository_1.3_all.deb
+    rm flightaware-apt-repository_1.3_all.deb
+    apt-get update -qq
+
+    info "Installing dump1090-fa and piaware..."
+    apt-get install -y dump1090-fa piaware 2>/dev/null || \
+        warn "Could not install dump1090-fa/piaware automatically — install manually from FlightAware PPA"
 else
     info "dump1090-fa is already installed"
 fi
