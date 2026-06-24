@@ -123,8 +123,10 @@ async def _fetch_airports(
         iata = tags.get("iata") or ""
         faa = tags.get("faa") or ""
 
-        # Only show airports with at least one official identifier (large/public airports)
-        if not (icao or iata or faa):
+        # Only show large/public airports that have a 4-character ICAO code or a 3-character IATA code
+        is_icao_valid = icao and len(icao) == 4
+        is_iata_valid = iata and len(iata) == 3
+        if not (is_icao_valid or is_iata_valid):
             continue
 
         name = (

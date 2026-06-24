@@ -106,11 +106,22 @@ const UI = (() => {
 
     let metaHtml = "";
     if (cachedMeta) {
-      metaHtml = `
-        ${cachedMeta.airline ? `<div class="info-row"><span>Airline</span><span style="color: #00ff65; font-weight: bold;">${cachedMeta.airline}</span></div>` : ""}
-        ${cachedMeta.model ? `<div class="info-row"><span>Model</span><span>${cachedMeta.model}</span></div>` : ""}
-        ${cachedMeta.registration ? `<div class="info-row"><span>Registration</span><span>${cachedMeta.registration}</span></div>` : ""}
-      `;
+      if (cachedMeta.loading) {
+        metaHtml = `
+          <div class="info-row"><span style="color: var(--text-dim);">Details</span><span style="color: var(--text-dim); font-style: italic;">Loading...</span></div>
+        `;
+      } else if (!cachedMeta.airline && !cachedMeta.manufacturer && !cachedMeta.model && !cachedMeta.registration) {
+        metaHtml = `
+          <div class="info-row"><span style="color: var(--text-dim);">Details</span><span style="color: var(--text-dim); font-style: italic;">Not available</span></div>
+        `;
+      } else {
+        metaHtml = `
+          ${cachedMeta.airline ? `<div class="info-row"><span>Airline</span><span style="color: #00ff65; font-weight: bold;">${cachedMeta.airline}</span></div>` : ""}
+          ${cachedMeta.manufacturer ? `<div class="info-row"><span>Manufacturer</span><span>${cachedMeta.manufacturer}</span></div>` : ""}
+          ${cachedMeta.model ? `<div class="info-row"><span>Model</span><span>${cachedMeta.model}</span></div>` : ""}
+          ${cachedMeta.registration ? `<div class="info-row"><span>Registration</span><span>${cachedMeta.registration}</span></div>` : ""}
+        `;
+      }
     } else {
       metaHtml = `
         <div class="info-row"><span style="color: var(--text-dim);">Details</span><span style="color: var(--text-dim); font-style: italic;">Loading...</span></div>
@@ -266,11 +277,14 @@ const UI = (() => {
   }
 
   async function _fetchMetadata(icao) {
+    if (_metaCache.has(icao)) return;
+    _metaCache.set(icao, { loading: true });
     console.log("[UI] _fetchMetadata starting for:", icao);
     try {
       const resp = await fetch(`/api/aircraft/${icao}/metadata`);
       if (!resp.ok) {
         console.warn("[UI] Metadata fetch HTTP error:", resp.status);
+        _metaCache.delete(icao);
         return;
       }
       const meta = await resp.json();
@@ -279,6 +293,7 @@ const UI = (() => {
       _renderMetadata(icao, meta);
     } catch (e) {
       console.warn(`[UI] Failed to fetch metadata for ${icao}:`, e);
+      _metaCache.delete(icao);
     }
   }
 
@@ -297,13 +312,16 @@ const UI = (() => {
       return;
     }
 
-    if (!meta || (!meta.airline && !meta.model && !meta.registration)) {
-      metaEl.innerHTML = "";
+    if (!meta || (!meta.airline && !meta.manufacturer && !meta.model && !meta.registration)) {
+      metaEl.innerHTML = `
+        <div class="info-row"><span style="color: var(--text-dim);">Details</span><span style="color: var(--text-dim); font-style: italic;">Not available</span></div>
+      `;
       return;
     }
 
     metaEl.innerHTML = `
       ${meta.airline ? `<div class="info-row"><span>Airline</span><span style="color: #00ff65; font-weight: bold;">${meta.airline}</span></div>` : ""}
+      ${meta.manufacturer ? `<div class="info-row"><span>Manufacturer</span><span>${meta.manufacturer}</span></div>` : ""}
       ${meta.model ? `<div class="info-row"><span>Model</span><span>${meta.model}</span></div>` : ""}
       ${meta.registration ? `<div class="info-row"><span>Registration</span><span>${meta.registration}</span></div>` : ""}
     `;
