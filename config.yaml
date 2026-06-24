@@ -1,0 +1,72 @@
+# Pi Radar — Application Configuration
+# Edit this file to customize your setup.
+
+radar:
+  # Geographic center of the radar (your home location)
+  # Google maps exact location :
+  # 33.26163401180695, -96.77863598058015
+  home_lat: 33.261634
+  home_lon: -96.778636
+  home_label: "Prosper, TX"
+
+  # Range rings to display (in nautical miles)
+  range_rings_nm: [25, 50, 100, 200]
+
+  # Starting zoom level (nautical miles radius shown)
+  default_range_nm: 100
+
+  # How often to poll for new aircraft data (seconds)
+  refresh_interval_sec: 5
+
+  # How many hours of track history to keep in SQLite
+  history_hours: 1
+
+  # Number of ghost trail points to show per aircraft
+  track_points: 10
+
+dump1090:
+  # dump1090-fa HTTP endpoint (default for a local install)
+  host: "127.0.0.1"
+  port: 8080
+  json_path: "/data/aircraft.json"
+  # Timeout in seconds for each HTTP request
+  timeout_sec: 2
+  # Number of consecutive failures before switching to fallback
+  failure_threshold: 3
+
+opensky:
+  enabled: true
+  # OAuth2 credentials from opensky-network.org → Account → API Clients
+  client_id: "vachaspati@gmail.com-api-client"
+  client_secret: "XNUb6b94pZuelUuxZu1cXo6zSPxBHVuH"
+  # How often to poll OpenSky when in fallback mode (seconds)
+  # Keep at 30+ to stay within free-tier rate limits (~4000 credits/day)
+  poll_interval_sec: 30
+  # Extra degrees of padding around home location for the bounding box
+  bounding_box_margin_deg: 2.5
+
+fr24feed:
+  # Set to true if you have installed fr24feed on the Pi
+  enabled: false
+  sharing_key: "YOUR_FR24_SHARING_KEY_HERE"
+  mlat_enabled: true
+
+display:
+  # Set to true to launch Chromium in full-screen kiosk mode on Pi boot
+  kiosk_mode: false
+  # Pi 7" official touchscreen native resolution
+  screen_width: 800
+  screen_height: 480
+
+server:
+  # Bind to 0.0.0.0 to allow access from other devices on your LAN
+  host: "0.0.0.0"
+  port: 8000
+  log_level: "info"
+
+development:
+  # Set to true on Windows / dev machines to use mock aircraft data
+  # instead of real dump1090 or OpenSky data
+  use_mock_source: false
+  # Number of fake aircraft to simulate
+  mock_aircraft_count: 18

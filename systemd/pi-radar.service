@@ -1,0 +1,38 @@
+[Unit]
+Description=Pi Radar ADS-B Backend
+Documentation=https://github.com/yourname/pi-radar
+After=network-online.target dump1090-fa.service
+Wants=dump1090-fa.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/pi-radar
+
+# Activate virtual environment and run uvicorn
+ExecStart=/home/pi/pi-radar/venv/bin/uvicorn backend.main:app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --log-level info \
+    --no-access-log
+
+Restart=always
+RestartSec=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=pi-radar
+
+# Resource limits (friendly to Pi 5)
+LimitNOFILE=65536
+
+# Security (optional hardening)
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

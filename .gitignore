@@ -1,0 +1,81 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+parts/
+bin/
+var/
+sdist/
+develop-eggs/
+downloads/
+lib/
+lib64/
+share/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.hypothesis/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Databases / Data files
+*.db
+*.sqlite
+*.sqlite3
+data/*.json
+!data/README.md
+
+# Application Configuration & Secrets
+.env
+.env.*
+.env.local
+OpenSky_credentials.json
+*_credentials.json
+*credentials.json
+fr24feed.ini
+config.local.yaml
+
+# Frontend / Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# IDE / Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# Operating System
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Pi-specific / Packages
+*.deb

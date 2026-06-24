@@ -1,0 +1,208 @@
+/* ============================================================
+   main.css — Pi Radar Global Styles
+   Phosphor green CRT radar aesthetic
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+/* ── CSS Custom Properties ──────────────────────────────────── */
+:root {
+  /* Phosphor green palette */
+  --phosphor-bright:   #00ff41;
+  --phosphor-mid:      #00cc33;
+  --phosphor-dim:      #007722;
+  --phosphor-dark:     #003311;
+  --phosphor-glow:     rgba(0, 255, 65, 0.15);
+
+  /* Backgrounds */
+  --bg-primary:    #000d00;
+  --bg-secondary:  #000a00;
+  --bg-panel:      rgba(0, 15, 0, 0.92);
+  --bg-header:     rgba(0, 10, 0, 0.97);
+  --bg-glass:      rgba(0, 20, 0, 0.85);
+
+  /* Borders */
+  --border-dim:    #003300;
+  --border-mid:    #005500;
+  --border-bright: #00aa44;
+
+  /* Text */
+  --text-primary:  #00ff41;
+  --text-secondary:#00cc33;
+  --text-dim:      #007722;
+  --text-muted:    #004411;
+
+  /* Accent colours */
+  --accent-live:     #00ff41;
+  --accent-fallback: #ffaa00;
+  --accent-mock:     #00aaff;
+  --accent-warn:     #ff4400;
+
+  /* Fonts */
+  --font-mono:    'Share Tech Mono', 'Courier New', monospace;
+  --font-display: 'Orbitron', sans-serif;
+
+  /* Sizing */
+  --header-height: 44px;
+  --panel-width:   260px;
+  --border-radius: 4px;
+}
+
+/* ── Reset ────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.4;
+  /* Subtle scanline texture */
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 65, 0.012) 2px,
+    rgba(0, 255, 65, 0.012) 4px
+  );
+}
+
+/* ── Scrollbar ────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--phosphor-dim); border-radius: 2px; }
+
+/* ── Typography ───────────────────────────────────────────── */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── Utility ──────────────────────────────────────────────── */
+.hidden   { display: none !important; }
+.sr-only  {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); border: 0;
+}
+
+/* ── Glow effects ─────────────────────────────────────────── */
+.glow-text {
+  text-shadow:
+    0 0 4px var(--phosphor-bright),
+    0 0 12px rgba(0, 255, 65, 0.5);
+}
+
+.glow-border {
+  box-shadow:
+    0 0 6px rgba(0, 255, 65, 0.3),
+    inset 0 0 6px rgba(0, 255, 65, 0.05);
+}
+
+/* ── Buttons ──────────────────────────────────────────────── */
+button {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: transparent;
+  color: var(--phosphor-mid);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--border-radius);
+  padding: 5px 10px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.15s ease;
+}
+
+button:hover {
+  background: var(--phosphor-glow);
+  color: var(--phosphor-bright);
+  border-color: var(--phosphor-mid);
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.3);
+}
+
+button:active {
+  background: rgba(0, 255, 65, 0.2);
+}
+
+/* ── Select / Input ───────────────────────────────────────── */
+select {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg-secondary);
+  color: var(--phosphor-bright);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--border-radius);
+  padding: 4px 8px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+select:focus {
+  border-color: var(--phosphor-mid);
+  box-shadow: 0 0 6px rgba(0, 255, 65, 0.3);
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--phosphor-mid);
+  cursor: pointer;
+}
+
+/* ── Status Badge ─────────────────────────────────────────── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid;
+  transition: all 0.3s ease;
+}
+
+.status-badge.live {
+  color: var(--accent-live);
+  border-color: var(--accent-live);
+  background: rgba(0, 255, 65, 0.08);
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.25), inset 0 0 10px rgba(0, 255, 65, 0.05);
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+.status-badge.fallback {
+  color: var(--accent-fallback);
+  border-color: var(--accent-fallback);
+  background: rgba(255, 170, 0, 0.08);
+  box-shadow: 0 0 8px rgba(255, 170, 0, 0.2);
+}
+
+.status-badge.mock {
+  color: var(--accent-mock);
+  border-color: var(--accent-mock);
+  background: rgba(0, 170, 255, 0.08);
+}
+
+@keyframes live-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(0,255,65,0.25), inset 0 0 10px rgba(0,255,65,0.05); }
+  50%       { box-shadow: 0 0 20px rgba(0,255,65,0.45), inset 0 0 16px rgba(0,255,65,0.10); }
+}
+
+/* ── Divider ──────────────────────────────────────────────── */
+.info-divider {
+  height: 1px;
+  background: var(--border-dim);
+  margin: 8px 0;
+}

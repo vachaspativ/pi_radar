@@ -1,0 +1,43 @@
+[Unit]
+Description=Pi Radar Chromium Kiosk Browser
+After=pi-radar.service graphical-session.target
+Wants=pi-radar.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/pi/.Xauthority
+
+# Wait for backend to be ready
+ExecStartPre=/bin/sleep 4
+ExecStartPre=/bin/sh -c 'until curl -sf http://localhost:8000/ > /dev/null; do sleep 1; done'
+
+ExecStart=/usr/bin/chromium-browser \
+    --kiosk \
+    --window-size=800,480 \
+    --window-position=0,0 \
+    --no-sandbox \
+    --disable-infobars \
+    --disable-session-crashed-bubble \
+    --disable-restore-session-state \
+    --noerrdialogs \
+    --disable-translate \
+    --disable-features=TranslateUI \
+    --overscroll-history-navigation=0 \
+    --enable-gpu-rasterization \
+    --enable-zero-copy \
+    --ignore-gpu-blocklist \
+    http://localhost:8000
+
+Restart=always
+RestartSec=5
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=pi-radar-kiosk
+
+[Install]
+WantedBy=graphical.target

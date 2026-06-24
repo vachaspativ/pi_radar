@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="description" content="Pi Radar — Real-time ADS-B flight radar powered by RTL-SDR on Raspberry Pi" />
+  <meta name="theme-color" content="#000d00" />
+
+  <!-- Prevent caching for live data app -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+
+  <title>Pi Radar — ADS-B Flight Radar</title>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/css/main.css" />
+  <link rel="stylesheet" href="/css/radar.css" />
+</head>
+
+<body>
+  <div id="app">
+
+    <!-- ════════════════════════════════════════════════════════
+         HEADER BAR
+    ═══════════════════════════════════════════════════════════ -->
+    <header id="header" role="banner">
+      <!-- Logo + title -->
+      <h1 id="header-title" class="glow-text">⬡ PI RADAR</h1>
+      <span id="home-label" aria-label="Home location">Home</span>
+
+      <span class="header-spacer"></span>
+
+      <!-- Aircraft count -->
+      <span id="aircraft-count" aria-live="polite">0 aircraft</span>
+
+      <!-- Source status badge -->
+      <div id="status-badge" class="status-badge mock" aria-live="polite">◎ MOCK</div>
+      <span id="status-source" aria-label="Data source">Initialising...</span>
+
+      <span class="header-spacer"></span>
+
+      <!-- Range selector -->
+      <div class="control-group">
+        <label for="range-select" class="control-label">Range</label>
+        <select id="range-select" aria-label="Radar range in nautical miles">
+          <option value="25">25 nm</option>
+          <option value="50">50 nm</option>
+          <option value="100" selected>100 nm</option>
+          <option value="150">150 nm</option>
+          <option value="200">200 nm</option>
+        </select>
+      </div>
+
+      <!-- Filter toggle -->
+      <button id="filter-toggle" class="header-btn" aria-label="Toggle altitude filter" aria-expanded="false">
+        ⊟ Filter
+      </button>
+
+      <!-- Replay toggle -->
+      <button id="replay-toggle" class="header-btn" aria-label="Toggle replay controls" aria-expanded="false">
+        ◷ Replay
+      </button>
+
+      <!-- Clock -->
+      <time id="clock" aria-label="Current time">--:--:--</time>
+    </header>
+
+    <!-- ════════════════════════════════════════════════════════
+         MAIN CONTENT
+    ═══════════════════════════════════════════════════════════ -->
+    <main id="main-content" role="main">
+
+      <!-- ── Radar Area ──────────────────────────────────────── -->
+      <section id="radar-area" aria-label="Radar display">
+        <div id="radar-container">
+
+          <!-- Layer 1: Static background (rings, compass, grid) -->
+          <canvas id="bg-canvas" class="radar-canvas"
+                  role="img" aria-label="Radar background with range rings and compass rose">
+          </canvas>
+
+          <!-- Layer 2: Rotating sweep animation (60fps) -->
+          <canvas id="sweep-canvas" class="radar-canvas" aria-hidden="true"></canvas>
+
+          <!-- Layer 3: Aircraft blips and labels (interactive) -->
+          <canvas id="blip-canvas" class="radar-canvas"
+                  role="img" aria-label="Live aircraft positions"
+                  tabindex="0">
+          </canvas>
+
+        </div>
+
+        <!-- ── Altitude Filter Panel ─────────────────────────── -->
+        <aside id="filter-panel" role="complementary" aria-label="Altitude filter">
+          <div class="filter-title">Altitude Filter</div>
+
+          <div class="filter-row">
+            <label for="alt-min">
+              <span>Min Altitude</span>
+              <span id="alt-min-val">0 ft</span>
+            </label>
+            <input id="alt-min" type="range"
+                   min="0" max="45000" step="500" value="0"
+                   aria-label="Minimum altitude filter" />
+          </div>
+
+          <div class="filter-row">
+            <label for="alt-max">
+              <span>Max Altitude</span>
+              <span id="alt-max-val">50,000 ft</span>
+            </label>
+            <input id="alt-max" type="range"
+                   min="0" max="50000" step="500" value="50000"
+                   aria-label="Maximum altitude filter" />
+          </div>
+        </aside>
+
+        <!-- ── Replay Panel ──────────────────────────────────── -->
+        <aside id="replay-panel" role="complementary" aria-label="Flight history replay">
+          <div class="replay-title">⬤ History Replay (last 1 hour)</div>
+
+          <div class="replay-controls">
+            <button id="replay-play" aria-label="Play or pause replay">▶ Play</button>
+            <button id="replay-stop" aria-label="Stop replay">■ Stop</button>
+          </div>
+
+          <div id="replay-status" aria-live="polite">Ready</div>
+        </aside>
+
+      </section>
+
+      <!-- ── Right Info Panel ───────────────────────────────── -->
+      <aside id="info-panel" role="complementary" aria-label="Selected aircraft details">
+        <div id="info-panel-header">
+          <span id="info-panel-title">Aircraft Detail</span>
+          <button id="close-panel" aria-label="Close aircraft detail panel">✕</button>
+        </div>
+        <div id="info-content" aria-live="polite">
+          <!-- Populated dynamically by ui.js -->
+          <div style="color: var(--text-dim); font-size: 11px; padding-top: 16px; text-align: center;">
+            Click an aircraft blip<br>to view details
+          </div>
+        </div>
+      </aside>
+
+    </main>
+  </div><!-- /#app -->
+
+  <!-- ═══════════════════════════════════════════════════════
+       JavaScript — load order matters (no module bundler)
+  ═══════════════════════════════════════════════════════════ -->
+  <script src="/js/utils.js"></script>
+  <script src="/js/radar.js"></script>
+  <script src="/js/sweep.js"></script>
+  <script src="/js/aircraft.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/app.js"></script>
+
+</body>
+</html>
