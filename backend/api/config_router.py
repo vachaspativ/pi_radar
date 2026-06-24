@@ -31,7 +31,7 @@ async def get_config(request: Request):
             "home_lat": cfg.radar.home_lat,
             "home_lon": cfg.radar.home_lon,
             "home_label": cfg.radar.home_label,
-            "range_rings_nm": cfg.radar.range_rings_nm,
+            "range_options": cfg.radar.range_options,
             "default_range_nm": cfg.radar.default_range_nm,
             "refresh_interval_sec": cfg.radar.refresh_interval_sec,
             "track_points": cfg.radar.track_points,

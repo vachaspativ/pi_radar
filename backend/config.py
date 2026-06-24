@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import yaml
 from pydantic import BaseModel, Field
@@ -21,7 +21,15 @@ class RadarConfig(BaseModel):
     home_lat: float = 32.7767
     home_lon: float = -96.7970
     home_label: str = "Home"
-    range_rings_nm: List[int] = [25, 50, 100, 200]
+    range_options: Dict[int, List[int]] = {
+        5: [1, 2, 3, 4, 5],
+        10: [2, 4, 6, 8, 10],
+        25: [5, 10, 15, 20, 25],
+        50: [10, 20, 30, 40, 50],
+        100: [25, 50, 75, 100],
+        150: [25, 50, 75, 100, 125, 150],
+        200: [50, 100, 150, 200]
+    }
     default_range_nm: int = 100
     refresh_interval_sec: int = 5
     history_hours: int = 1

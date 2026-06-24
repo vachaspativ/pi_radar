@@ -35,6 +35,7 @@
   let _ws          = null;
   let _wsReconnectDelay = 1000;
   const WS_MAX_DELAY = 30000;
+  let _rangeOptions = {};
 
 
   // ---------------------------------------------------------------------------
@@ -109,11 +110,22 @@
       _homeLon   = cfg.radar.home_lon;
       _homeLabel = cfg.radar.home_label;
       _rangeNm   = cfg.radar.default_range_nm;
+      _rangeOptions = cfg.radar.range_options || {};
 
       // Populate range dropdown from config
       const select = document.getElementById("range-select");
-      if (select) {
-        select.value = _rangeNm;
+      if (select && cfg.radar.range_options) {
+        select.innerHTML = "";
+        const ranges = Object.keys(cfg.radar.range_options).map(Number).sort((a, b) => a - b);
+        for (const nm of ranges) {
+          const opt = document.createElement("option");
+          opt.value = nm;
+          opt.textContent = `${nm} nm`;
+          if (nm === _rangeNm) {
+            opt.selected = true;
+          }
+          select.appendChild(opt);
+        }
       }
 
       UI.setHomeLabel(_homeLabel);
@@ -233,7 +245,7 @@
     MapRenderer.init(mapCanvas, cx, cy, radius, _homeLat, _homeLon);
 
     // Init sub-renderers
-    RadarRenderer.init(bgCanvas, [25, 50, 100, 200], _rangeNm);
+    RadarRenderer.init(bgCanvas, _rangeOptions, _rangeNm);
     RadarRenderer.draw();
 
     SweepRenderer.init(sweepCanvas, cx, cy, radius);

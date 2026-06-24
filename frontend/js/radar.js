@@ -33,15 +33,7 @@ const RadarRenderer = (() => {
     centreDot:    "#00ff65",
   };
 
-  const RANGE_RINGS = {
-    5: [1, 2, 3, 4, 5],
-    10: [2, 4, 6, 8, 10],
-    25: [5, 10, 15, 20, 25],
-    50: [10, 20, 30, 40, 50],
-    100: [25, 50, 75, 100],
-    150: [25, 50, 75, 100, 125, 150],
-    200: [50, 100, 150, 200]
-  };
+  let _rangeOptions = {};
 
   // ---------------------------------------------------------------------------
   // State
@@ -58,9 +50,10 @@ const RadarRenderer = (() => {
   // Public API
   // ---------------------------------------------------------------------------
 
-  function init(canvas, rangeRingsNm, maxRangeNm) {
+  function init(canvas, rangeOptions, maxRangeNm) {
     _canvas = canvas;
     _ctx = canvas.getContext("2d");
+    setRangeOptions(rangeOptions);
     _recalc();
     setRange(maxRangeNm);
   }
@@ -70,9 +63,13 @@ const RadarRenderer = (() => {
     draw();
   }
 
+  function setRangeOptions(options) {
+    _rangeOptions = options || {};
+  }
+
   function setRange(rangeNm) {
     _maxRangeNm = rangeNm;
-    _rangeRingsNm = RANGE_RINGS[rangeNm] || [rangeNm / 4, rangeNm / 2, rangeNm * 3 / 4, rangeNm];
+    _rangeRingsNm = _rangeOptions[rangeNm] || [rangeNm / 4, rangeNm / 2, rangeNm * 3 / 4, rangeNm];
     draw();
   }
 
@@ -288,5 +285,5 @@ const RadarRenderer = (() => {
   }
 
   // ---------------------------------------------------------------------------
-  return { init, resize, draw, setRange, getCentre, getMaxRange };
+  return { init, resize, draw, setRange, setRangeOptions, getCentre, getMaxRange };
 })();
