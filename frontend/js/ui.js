@@ -94,6 +94,7 @@ const UI = (() => {
   function showAircraftInfo(ac) {
     if (!ac || !_els.infoPanel) return;
     _els.infoPanel.classList.add("visible");
+    console.log("[UI] showAircraftInfo for:", ac.icao);
 
     const callsign = ac.callsign || ac.icao.toUpperCase();
     const vrate = Utils.formatVrate(ac.vertical_rate_fpm);
@@ -265,10 +266,15 @@ const UI = (() => {
   }
 
   async function _fetchMetadata(icao) {
+    console.log("[UI] _fetchMetadata starting for:", icao);
     try {
       const resp = await fetch(`/api/aircraft/${icao}/metadata`);
-      if (!resp.ok) return;
+      if (!resp.ok) {
+        console.warn("[UI] Metadata fetch HTTP error:", resp.status);
+        return;
+      }
       const meta = await resp.json();
+      console.log("[UI] _fetchMetadata received meta:", icao, meta);
       _metaCache.set(icao, meta);
       _renderMetadata(icao, meta);
     } catch (e) {
@@ -279,10 +285,17 @@ const UI = (() => {
   function _renderMetadata(icao, meta) {
     // Check if this aircraft is still selected
     const selected = AircraftRenderer.getSelected();
-    if (!selected || selected.icao.toLowerCase() !== icao) return;
+    console.log("[UI] _renderMetadata checking for:", icao, "selected:", selected ? selected.icao : null, "meta:", meta);
+    if (!selected || selected.icao.toLowerCase() !== icao) {
+      console.log("[UI] _renderMetadata early exit: selection changed or mismatch");
+      return;
+    }
 
     const metaEl = document.getElementById("info-meta-section");
-    if (!metaEl) return;
+    if (!metaEl) {
+      console.warn("[UI] _renderMetadata: #info-meta-section element not found");
+      return;
+    }
 
     if (!meta || (!meta.airline && !meta.model && !meta.registration)) {
       metaEl.innerHTML = "";
