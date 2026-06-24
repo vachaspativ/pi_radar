@@ -23,12 +23,12 @@ const RadarRenderer = (() => {
   const C = {
     bg:           "#000d00",
     bgEdge:       "#000500",
-    ring:         "#003800",
-    ringBright:   "#005500",
-    ringLabel:    "#007700",
-    grid:         "#001a00",
-    compass:      "#005500",
-    compassLabel: "#00aa00",
+    ring:         "#004a00",
+    ringBright:   "#006600",
+    ringLabel:    "#009900",
+    grid:         "#002200",
+    compass:      "#006600",
+    compassLabel: "#00bb00",
     homeMarker:   "#00ff65",
     centreDot:    "#00ff65",
   };
@@ -96,17 +96,17 @@ const RadarRenderer = (() => {
   }
 
   function _drawBackground(ctx, w, h) {
-    // Deep dark fill
-    ctx.fillStyle = C.bg;
-    ctx.fillRect(0, 0, w, h);
+    // No solid fill — the map canvas layer below shows through.
+    // We only draw the vignette overlay and the outer border.
 
-    // Circular clip mask + vignette
+    // Circular vignette — darkens the edges over the map for readability
     const vignette = ctx.createRadialGradient(
-      _cx, _cy, _radius * 0.5,
+      _cx, _cy, _radius * 0.45,
       _cx, _cy, _radius
     );
-    vignette.addColorStop(0, "rgba(0,30,0,0)");
-    vignette.addColorStop(1, "rgba(0,4,0,0.85)");
+    vignette.addColorStop(0, "rgba(0,20,0,0)");
+    vignette.addColorStop(0.7, "rgba(0,8,0,0.25)");
+    vignette.addColorStop(1, "rgba(0,4,0,0.82)");
 
     ctx.save();
     ctx.beginPath();
@@ -119,7 +119,7 @@ const RadarRenderer = (() => {
     // Outer ring border
     ctx.beginPath();
     ctx.arc(_cx, _cy, _radius, 0, Math.PI * 2);
-    ctx.strokeStyle = "#007700";
+    ctx.strokeStyle = "#008800";
     ctx.lineWidth = 1.5;
     ctx.stroke();
   }

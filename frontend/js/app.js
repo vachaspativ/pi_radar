@@ -13,11 +13,13 @@
 (function PiRadarApp() {
 
   // ---------------------------------------------------------------------------
-  // Canvas setup — we use THREE stacked canvases for performance:
+  // Canvas setup — FOUR stacked canvases for performance:
+  //   0. map-canvas  — OSM tile map background (redrawn on range/resize)
   //   1. bg-canvas   — static radar background (rings, compass) — rarely redrawn
   //   2. sweep-canvas — rotating sweep animation (60fps)
-  //   3. blip-canvas  — aircraft blips + labels (redrawn on data update)
+  //   3. blip-canvas  — aircraft icons + airport markers (redrawn on data update)
   // ---------------------------------------------------------------------------
+  const mapCanvas   = document.getElementById("map-canvas");
   const bgCanvas    = document.getElementById("bg-canvas");
   const sweepCanvas = document.getElementById("sweep-canvas");
   const blipCanvas  = document.getElementById("blip-canvas");
@@ -34,6 +36,7 @@
   let _wsReconnectDelay = 1000;
   const WS_MAX_DELAY = 30000;
 
+
   // ---------------------------------------------------------------------------
   // Sizing helpers
   // ---------------------------------------------------------------------------
@@ -47,10 +50,13 @@
     const size = _getSize();
     const { cx, cy, radius } = _calcCentre(size);
 
-    for (const canvas of [bgCanvas, sweepCanvas, blipCanvas]) {
+    for (const canvas of [mapCanvas, bgCanvas, sweepCanvas, blipCanvas]) {
       canvas.width  = size;
       canvas.height = size;
     }
+
+    // Map tiles layer
+    MapRenderer.resize(cx, cy, radius);
 
     // Update sub-renderers
     RadarRenderer.resize();
@@ -74,6 +80,22 @@
     const cy = size / 2;
     const radius = size / 2 - MARGIN;
     return { cx, cy, radius };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Airport data
+  // ---------------------------------------------------------------------------
+  async function _fetchAirports(rangeNm) {
+    try {
+      const resp = await fetch(`/api/airports?range_nm=${rangeNm}`);
+      if (!resp.ok) return;
+      const airports = await resp.json();
+      AircraftRenderer.updateAirports(airports);
+      AircraftRenderer.draw();
+      console.log(`[App] Loaded ${airports.length} airports for range=${rangeNm}nm`);
+    } catch (e) {
+      console.warn("[App] Airport fetch failed:", e);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -170,6 +192,7 @@
   // ---------------------------------------------------------------------------
   function _onRangeChange(nm) {
     _rangeNm = nm;
+    MapRenderer.setRange(nm);
     RadarRenderer.setRange(nm);
     RadarRenderer.draw();
 
@@ -181,6 +204,9 @@
       homeLon: _homeLon,
     });
     AircraftRenderer.draw();
+
+    // Re-fetch airports for the new range (bounding box changed)
+    _fetchAirports(nm);
 
     // Notify backend (optional)
     if (_ws && _ws.readyState === WebSocket.OPEN) {
@@ -198,10 +224,13 @@
     // Size all canvases
     const size = _getSize();
     const { cx, cy, radius } = _calcCentre(size);
-    for (const canvas of [bgCanvas, sweepCanvas, blipCanvas]) {
+    for (const canvas of [mapCanvas, bgCanvas, sweepCanvas, blipCanvas]) {
       canvas.width  = size;
       canvas.height = size;
     }
+
+    // Init map tile layer (bottom canvas)
+    MapRenderer.init(mapCanvas, cx, cy, radius, _homeLat, _homeLon);
 
     // Init sub-renderers
     RadarRenderer.init(bgCanvas, [25, 50, 100, 200], _rangeNm);
@@ -219,6 +248,9 @@
       if (ac) UI.showAircraftInfo(ac);
       else     UI.hideAircraftInfo();
     });
+
+    // Fetch initial airport data
+    _fetchAirports(_rangeNm);
 
     // Init UI
     UI.init({

@@ -73,6 +73,9 @@
       <section id="radar-area" aria-label="Radar display">
         <div id="radar-container">
 
+          <!-- Layer 0 (NEW): OSM tile map background (redrawn on range change) -->
+          <canvas id="map-canvas" class="radar-canvas" aria-hidden="true"></canvas>
+
           <!-- Layer 1: Static background (rings, compass, grid) -->
           <canvas id="bg-canvas" class="radar-canvas"
                   role="img" aria-label="Radar background with range rings and compass rose">
@@ -81,9 +84,9 @@
           <!-- Layer 2: Rotating sweep animation (60fps) -->
           <canvas id="sweep-canvas" class="radar-canvas" aria-hidden="true"></canvas>
 
-          <!-- Layer 3: Aircraft blips and labels (interactive) -->
+          <!-- Layer 3: Aircraft blips/icons, airport markers and labels (interactive) -->
           <canvas id="blip-canvas" class="radar-canvas"
-                  role="img" aria-label="Live aircraft positions"
+                  role="img" aria-label="Live aircraft positions and airport markers"
                   tabindex="0">
           </canvas>
 
@@ -149,6 +152,7 @@
        JavaScript — load order matters (no module bundler)
   ═══════════════════════════════════════════════════════════ -->
   <script src="/js/utils.js"></script>
+  <script src="/js/map.js"></script>
   <script src="/js/radar.js"></script>
   <script src="/js/sweep.js"></script>
   <script src="/js/aircraft.js"></script>

@@ -32,6 +32,7 @@ from backend.ws.websocket_handler import ConnectionManager
 from backend.api.aircraft_router import router as aircraft_router
 from backend.api.history_router import router as history_router
 from backend.api.config_router import router as config_router
+from backend.api.airport_router import router as airport_router
 
 # ---------------------------------------------------------------------------
 # Frontend path
@@ -148,6 +149,7 @@ app = FastAPI(
 app.include_router(aircraft_router)
 app.include_router(history_router)
 app.include_router(config_router)
+app.include_router(airport_router)
 
 
 # ── WebSocket endpoint ───────────────────────────────────────────────────────

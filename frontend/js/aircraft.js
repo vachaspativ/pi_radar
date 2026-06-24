@@ -24,19 +24,21 @@ const AircraftRenderer = (() => {
     selected: "#ffffff",
   };
 
-  const BLIP_RADIUS = 5;
+  const BLIP_RADIUS     = 5;
   const SELECTED_RADIUS = 8;
-  const LABEL_OFFSET = 12;
+  const LABEL_OFFSET    = 14;
+  const AIRPORT_COLOUR  = "#ffaa00";
 
   // ---------------------------------------------------------------------------
   // State
   // ---------------------------------------------------------------------------
-  let _canvas = null;
-  let _ctx = null;
-  let _aircraft = [];        // Latest aircraft array from server
-  let _selectedIcao = null;  // ICAO of clicked aircraft
-  let _config = null;        // { cx, cy, radius, maxRangeNm, homeLat, homeLon }
-  let _onSelect = null;      // Callback: function(aircraft | null)
+  let _canvas      = null;
+  let _ctx         = null;
+  let _aircraft    = [];        // Latest aircraft array from server
+  let _airports    = [];        // Airport data from /api/airports
+  let _selectedIcao = null;     // ICAO of clicked aircraft
+  let _config      = null;      // { cx, cy, radius, maxRangeNm, homeLat, homeLon }
+  let _onSelect    = null;      // Callback: function(aircraft | null)
 
   // ---------------------------------------------------------------------------
   // Public API
@@ -60,16 +62,26 @@ const AircraftRenderer = (() => {
     _aircraft = aircraftArray || [];
   }
 
+  function updateAirports(airportArray) {
+    _airports = airportArray || [];
+  }
+
   function draw() {
     if (!_canvas || !_config) return;
     const ctx = _ctx;
     ctx.clearRect(0, 0, _canvas.width, _canvas.height);
 
+    // Pass 1: Airports (drawn first so aircraft appear on top)
+    _drawAirports(ctx);
+
+    // Pass 2: Aircraft trails
     for (const ac of _aircraft) {
       const pos = _toCanvas(ac);
       if (!pos || !pos.inRange) continue;
       _drawTrail(ctx, ac, pos);
     }
+
+    // Pass 3: Aircraft blips (plane icons) + labels
     for (const ac of _aircraft) {
       const pos = _toCanvas(ac);
       if (!pos || !pos.inRange) continue;
@@ -108,67 +120,191 @@ const AircraftRenderer = (() => {
     return COLOUR[band] || COLOUR.unknown;
   }
 
-  function _drawBlip(ctx, ac, pos) {
-    const r = ac.icao === _selectedIcao ? SELECTED_RADIUS : BLIP_RADIUS;
-    const colour = _blipColour(ac);
+  // ---------------------------------------------------------------------------
+  // Rendering — Airports
+  // ---------------------------------------------------------------------------
 
+  function _drawAirports(ctx) {
+    if (!_airports.length) return;
+    const size = Math.max(6, _config.radius * 0.018);
+
+    for (const ap of _airports) {
+      if (ap.lat == null || ap.lon == null) continue;
+      const pos = Utils.latLonToCanvas(
+        ap.lat, ap.lon,
+        _config.homeLat, _config.homeLon,
+        _config.cx, _config.cy,
+        _config.radius, _config.maxRangeNm
+      );
+      if (!pos || !pos.inRange) continue;
+      _drawAirportIcon(ctx, pos.x, pos.y, ap, size);
+    }
+  }
+
+  function _drawAirportIcon(ctx, x, y, ap, size) {
     ctx.save();
-    ctx.shadowBlur = 12;
-    ctx.shadowColor = colour;
+    ctx.shadowBlur  = 6;
+    ctx.shadowColor = AIRPORT_COLOUR;
+    ctx.strokeStyle = AIRPORT_COLOUR;
+    ctx.fillStyle   = AIRPORT_COLOUR;
 
-    // Outer glow ring
+    // Outer circle
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, r + 3, 0, Math.PI * 2);
-    ctx.strokeStyle = colour.replace(")", ", 0.3)").replace("rgb", "rgba");
-    ctx.lineWidth = 1;
+    ctx.arc(x, y, size, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Main blip
+    // Runway cross — vertical bar (main runway)
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = colour;
-    ctx.fill();
+    ctx.moveTo(x, y - size);
+    ctx.lineTo(x, y + size);
+    ctx.stroke();
 
-    // Heading arrow
-    if (ac.heading_deg != null && !ac.on_ground) {
-      _drawHeadingArrow(ctx, pos.x, pos.y, ac.heading_deg, colour, r);
-    }
+    // Runway cross — horizontal bar (cross-wind)
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x - size * 0.65, y);
+    ctx.lineTo(x + size * 0.65, y);
+    ctx.stroke();
+
+    // Centre dot
+    ctx.beginPath();
+    ctx.arc(x, y, size * 0.18, 0, Math.PI * 2);
+    ctx.fill();
 
     ctx.shadowBlur = 0;
     ctx.restore();
+
+    // ICAO / IATA label
+    const label = ap.icao || ap.iata || ap.name.slice(0, 4).toUpperCase();
+    if (label) {
+      const fontSize = Math.max(8, _config.radius * 0.026);
+      ctx.save();
+      ctx.font         = `bold ${fontSize}px "Courier New", monospace`;
+      ctx.textAlign    = "left";
+      ctx.textBaseline = "middle";
+
+      const lx = x + size + 4;
+      const ly = y;
+      const tw = ctx.measureText(label).width;
+
+      // Background box
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(lx - 2, ly - fontSize * 0.6, tw + 4, fontSize * 1.2);
+
+      ctx.fillStyle = AIRPORT_COLOUR;
+      ctx.fillText(label, lx, ly);
+      ctx.restore();
+    }
   }
 
-  function _drawHeadingArrow(ctx, x, y, headingDeg, colour, blipR) {
-    const arrowLen = blipR + 14;
-    const rad = Utils.toRad(headingDeg);
-    const tipX = x + arrowLen * Math.sin(rad);
-    const tipY = y - arrowLen * Math.cos(rad);
+  // ---------------------------------------------------------------------------
+  // Rendering — Aircraft blips (plane icons)
+  // ---------------------------------------------------------------------------
 
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(tipX, tipY);
-    ctx.strokeStyle = colour;
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([3, 3]);
-    ctx.stroke();
-    ctx.setLineDash([]);
+  function _drawBlip(ctx, ac, pos) {
+    const isSelected = ac.icao === _selectedIcao;
+    const colour     = _blipColour(ac);
+    const size       = isSelected ? SELECTED_RADIUS : BLIP_RADIUS;
 
-    // Arrowhead
-    const headLen = 5;
-    const headAngle = 0.4;
-    ctx.beginPath();
-    ctx.moveTo(tipX, tipY);
-    ctx.lineTo(
-      tipX - headLen * Math.sin(rad - headAngle),
-      tipY + headLen * Math.cos(rad - headAngle)
-    );
-    ctx.moveTo(tipX, tipY);
-    ctx.lineTo(
-      tipX - headLen * Math.sin(rad + headAngle),
-      tipY + headLen * Math.cos(rad + headAngle)
-    );
-    ctx.stroke();
+    ctx.save();
+    ctx.shadowBlur  = isSelected ? 20 : 12;
+    ctx.shadowColor = colour;
+
+    if (ac.heading_deg != null && !ac.on_ground) {
+      // Directional plane silhouette
+      _drawPlaneIcon(ctx, pos.x, pos.y, ac.heading_deg, colour, size, isSelected);
+    } else {
+      // No heading data (e.g. on ground, transponder type S) — draw dot
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, size + 3, 0, Math.PI * 2);
+      ctx.strokeStyle = _toRgba(colour, 0.3);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+      ctx.fillStyle = colour;
+      ctx.fill();
+    }
+
+    ctx.restore();
   }
+
+  /**
+   * Draw a top-down aircraft silhouette centred on (x, y),
+   * rotated so the nose points in the direction of headingDeg.
+   *
+   * Default orientation: nose at top (negative Y), heading 0° = North.
+   */
+  function _drawPlaneIcon(ctx, x, y, headingDeg, colour, size, selected) {
+    const s   = size * 1.5;                 // scale factor
+    const rad = Utils.toRad(headingDeg);    // rotation angle
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rad);
+
+    // --- Fuselage + wings + tail outline ---
+    ctx.beginPath();
+
+    // Nose tip (north / up in local coords)
+    ctx.moveTo(0, -s * 2.1);
+
+    // Right wing leading edge
+    ctx.lineTo(s * 2.3,  s * 0.3);
+    // Right wing trailing edge
+    ctx.lineTo(s * 0.9,  s * 0.55);
+
+    // Right tail fin
+    ctx.lineTo(s * 0.85, s * 1.75);
+    // Tail centreline
+    ctx.lineTo(0,        s * 1.25);
+    // Left tail fin
+    ctx.lineTo(-s * 0.85, s * 1.75);
+
+    // Left wing trailing edge
+    ctx.lineTo(-s * 0.9,  s * 0.55);
+    // Left wing leading edge
+    ctx.lineTo(-s * 2.3,  s * 0.3);
+
+    ctx.closePath();
+
+    ctx.fillStyle = colour;
+    ctx.fill();
+
+    if (selected) {
+      // Bright outline + glow halo for selected aircraft
+      ctx.strokeStyle = colour;
+      ctx.lineWidth   = 1.5;
+      ctx.stroke();
+
+      ctx.restore();
+      ctx.save();
+      ctx.shadowBlur  = 20;
+      ctx.shadowColor = colour;
+      ctx.beginPath();
+      ctx.arc(x, y, s * 3, 0, Math.PI * 2);
+      ctx.strokeStyle = _toRgba(colour, 0.25);
+      ctx.lineWidth   = 1;
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  /** Convert '#rrggbb' hex colour to rgba string with given alpha. */
+  function _toRgba(colour, alpha) {
+    if (colour.startsWith("#") && colour.length === 7) {
+      const r = parseInt(colour.slice(1, 3), 16);
+      const g = parseInt(colour.slice(3, 5), 16);
+      const b = parseInt(colour.slice(5, 7), 16);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+    return colour;
+  }
+
 
   function _drawTrail(ctx, ac, pos) {
     if (!ac.track || ac.track.length < 2) return;
@@ -278,5 +414,5 @@ const AircraftRenderer = (() => {
   }
 
   // ---------------------------------------------------------------------------
-  return { init, resize, update, draw, getSelected, clearSelection };
+  return { init, resize, update, updateAirports, draw, getSelected, clearSelection };
 })();
