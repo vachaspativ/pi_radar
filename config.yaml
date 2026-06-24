@@ -20,7 +20,7 @@ radar:
     200: [50, 100, 150, 200]
 
   # Starting zoom level (nautical miles radius shown)
-  default_range_nm: 100
+  default_range_nm: 25
 
   # How often to poll for new aircraft data (seconds)
   refresh_interval_sec: 5
