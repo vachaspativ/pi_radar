@@ -24,9 +24,9 @@ const AircraftRenderer = (() => {
     selected: "#ffffff",
   };
 
-  const BLIP_RADIUS     = 5;
-  const SELECTED_RADIUS = 8;
-  const LABEL_OFFSET    = 14;
+  const BLIP_RADIUS     = 3.5;
+  const SELECTED_RADIUS = 6;
+  const LABEL_OFFSET    = 12;
   const AIRPORT_COLOUR  = "#ffaa00";
 
   // ---------------------------------------------------------------------------
@@ -176,8 +176,8 @@ const AircraftRenderer = (() => {
     ctx.shadowBlur = 0;
     ctx.restore();
 
-    // ICAO / IATA label
-    const label = ap.icao || ap.iata || ap.name.slice(0, 4).toUpperCase();
+    // ICAO / IATA / FAA label
+    const label = ap.icao || ap.iata || ap.faa || ap.name.slice(0, 4).toUpperCase();
     if (label) {
       const fontSize = Math.max(8, _config.radius * 0.026);
       ctx.save();
@@ -239,7 +239,7 @@ const AircraftRenderer = (() => {
    * Default orientation: nose at top (negative Y), heading 0° = North.
    */
   function _drawPlaneIcon(ctx, x, y, headingDeg, colour, size, selected) {
-    const s   = size * 1.5;                 // scale factor
+    const s   = size * 1.1;                 // scale factor (shrunk for cleaner display)
     const rad = Utils.toRad(headingDeg);    // rotation angle
 
     ctx.save();

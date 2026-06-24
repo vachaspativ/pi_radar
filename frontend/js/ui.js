@@ -23,6 +23,7 @@ const UI = (() => {
   let _onReplayStart = null;
   let _onReplayStop = null;
   let _replayActive = false;
+  const _metaCache  = new Map();
 
   // ---------------------------------------------------------------------------
   // Public API
@@ -99,10 +100,32 @@ const UI = (() => {
     const vrateClass = ac.vertical_rate_fpm > 64  ? "climb"  :
                        ac.vertical_rate_fpm < -64 ? "descend" : "";
 
+    const cleanIcao = ac.icao.toLowerCase().trim();
+    const cachedMeta = _metaCache.get(cleanIcao);
+
+    let metaHtml = "";
+    if (cachedMeta) {
+      metaHtml = `
+        ${cachedMeta.airline ? `<div class="info-row"><span>Airline</span><span style="color: #00ff65; font-weight: bold;">${cachedMeta.airline}</span></div>` : ""}
+        ${cachedMeta.model ? `<div class="info-row"><span>Model</span><span>${cachedMeta.model}</span></div>` : ""}
+        ${cachedMeta.registration ? `<div class="info-row"><span>Registration</span><span>${cachedMeta.registration}</span></div>` : ""}
+      `;
+    } else {
+      metaHtml = `
+        <div class="info-row"><span style="color: var(--text-dim);">Details</span><span style="color: var(--text-dim); font-style: italic;">Loading...</span></div>
+      `;
+      _fetchMetadata(cleanIcao);
+    }
+
     _els.infoPanelContent.innerHTML = `
       <div class="info-callsign">${callsign}</div>
       <div class="info-icao">ICAO: ${ac.icao.toUpperCase()}</div>
       ${ac.squawk ? `<div class="info-row"><span>Squawk</span><span>${ac.squawk}</span></div>` : ""}
+      
+      <div id="info-meta-section">
+        ${metaHtml}
+      </div>
+      
       <div class="info-divider"></div>
       <div class="info-row"><span>Altitude</span><span>${Utils.formatAlt(ac.altitude_ft)}</span></div>
       <div class="info-row ${vrateClass}"><span>Climb Rate</span><span>${vrate}</span></div>
@@ -239,6 +262,38 @@ const UI = (() => {
     }
     tick();
     setInterval(tick, 1000);
+  }
+
+  async function _fetchMetadata(icao) {
+    try {
+      const resp = await fetch(`/api/aircraft/${icao}/metadata`);
+      if (!resp.ok) return;
+      const meta = await resp.json();
+      _metaCache.set(icao, meta);
+      _renderMetadata(icao, meta);
+    } catch (e) {
+      console.warn(`[UI] Failed to fetch metadata for ${icao}:`, e);
+    }
+  }
+
+  function _renderMetadata(icao, meta) {
+    // Check if this aircraft is still selected
+    const selected = AircraftRenderer.getSelected();
+    if (!selected || selected.icao.toLowerCase() !== icao) return;
+
+    const metaEl = document.getElementById("info-meta-section");
+    if (!metaEl) return;
+
+    if (!meta || (!meta.airline && !meta.model && !meta.registration)) {
+      metaEl.innerHTML = "";
+      return;
+    }
+
+    metaEl.innerHTML = `
+      ${meta.airline ? `<div class="info-row"><span>Airline</span><span style="color: #00ff65; font-weight: bold;">${meta.airline}</span></div>` : ""}
+      ${meta.model ? `<div class="info-row"><span>Model</span><span>${meta.model}</span></div>` : ""}
+      ${meta.registration ? `<div class="info-row"><span>Registration</span><span>${meta.registration}</span></div>` : ""}
+    `;
   }
 
   // ---------------------------------------------------------------------------

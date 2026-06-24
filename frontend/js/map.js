@@ -26,8 +26,8 @@ const MapRenderer = (() => {
   const TILE_SIZE     = 256;          // OSM standard tile size in px
   const TILE_URL      = "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png";
   const MIN_ZOOM      = 4;
-  const MAX_ZOOM      = 12;
-  const TILE_OPACITY  = 0.52;         // Map is dimmed so radar overlay stays dominant
+  const MAX_ZOOM      = 14;
+  const TILE_OPACITY  = 0.85;         // Map is on focus (clearer background)
   const EARTH_CIRC_NM = 21639;        // Earth circumference in nautical miles
 
   // ---------------------------------------------------------------------------

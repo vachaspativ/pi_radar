@@ -105,7 +105,7 @@ const SweepRenderer = (() => {
     const stepAngle = TRAIL_SPAN_RAD / steps;
 
     for (let i = 0; i < steps; i++) {
-      const alpha = (i / steps) * 0.18;  // fades toward 0 at the back
+      const alpha = (i / steps) * 0.09;  // fades toward 0 at the back
       const startAngle = _angle - TRAIL_SPAN_RAD + i * stepAngle - Math.PI / 2;
       const endAngle = startAngle + stepAngle;
 
@@ -125,7 +125,7 @@ const SweepRenderer = (() => {
     const lineGrad = ctx.createLinearGradient(cx, cy, tipX, tipY);
     lineGrad.addColorStop(0,    "rgba(0, 255, 65, 0.0)");
     lineGrad.addColorStop(0.3,  "rgba(0, 255, 65, 0.5)");
-    lineGrad.addColorStop(1.0,  "rgba(0, 255, 65, 1.0)");
+    lineGrad.addColorStop(1.0,  "rgba(0, 255, 65, 0.7)");
 
     ctx.beginPath();
     ctx.moveTo(cx, cy);

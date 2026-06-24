@@ -23,14 +23,24 @@ const RadarRenderer = (() => {
   const C = {
     bg:           "#000d00",
     bgEdge:       "#000500",
-    ring:         "#004a00",
-    ringBright:   "#006600",
-    ringLabel:    "#009900",
-    grid:         "#002200",
-    compass:      "#006600",
-    compassLabel: "#00bb00",
+    ring:         "rgba(0, 150, 0, 0.12)",   // very light translucent green
+    ringBright:   "rgba(0, 200, 0, 0.20)",   // light translucent green
+    ringLabel:    "rgba(0, 200, 0, 0.35)",   // dim green label
+    grid:         "rgba(0, 100, 0, 0.06)",   // extremely faint grid lines
+    compass:      "rgba(0, 150, 0, 0.18)",   // light compass lines
+    compassLabel: "rgba(0, 255, 100, 0.45)",  // cardinal labels
     homeMarker:   "#00ff65",
     centreDot:    "#00ff65",
+  };
+
+  const RANGE_RINGS = {
+    5: [1, 2, 3, 4, 5],
+    10: [2, 4, 6, 8, 10],
+    25: [5, 10, 15, 20, 25],
+    50: [10, 20, 30, 40, 50],
+    100: [25, 50, 75, 100],
+    150: [25, 50, 75, 100, 125, 150],
+    200: [50, 100, 150, 200]
   };
 
   // ---------------------------------------------------------------------------
@@ -51,9 +61,8 @@ const RadarRenderer = (() => {
   function init(canvas, rangeRingsNm, maxRangeNm) {
     _canvas = canvas;
     _ctx = canvas.getContext("2d");
-    _rangeRingsNm = rangeRingsNm;
-    _maxRangeNm = maxRangeNm;
     _recalc();
+    setRange(maxRangeNm);
   }
 
   function resize() {
@@ -63,6 +72,7 @@ const RadarRenderer = (() => {
 
   function setRange(rangeNm) {
     _maxRangeNm = rangeNm;
+    _rangeRingsNm = RANGE_RINGS[rangeNm] || [rangeNm / 4, rangeNm / 2, rangeNm * 3 / 4, rangeNm];
     draw();
   }
 
@@ -104,9 +114,9 @@ const RadarRenderer = (() => {
       _cx, _cy, _radius * 0.45,
       _cx, _cy, _radius
     );
-    vignette.addColorStop(0, "rgba(0,20,0,0)");
-    vignette.addColorStop(0.7, "rgba(0,8,0,0.25)");
-    vignette.addColorStop(1, "rgba(0,4,0,0.82)");
+    vignette.addColorStop(0, "rgba(0,0,0,0)");
+    vignette.addColorStop(0.7, "rgba(0,0,0,0.12)");
+    vignette.addColorStop(1, "rgba(0,0,0,0.52)");
 
     ctx.save();
     ctx.beginPath();
@@ -119,8 +129,8 @@ const RadarRenderer = (() => {
     // Outer ring border
     ctx.beginPath();
     ctx.arc(_cx, _cy, _radius, 0, Math.PI * 2);
-    ctx.strokeStyle = "#008800";
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "rgba(0, 204, 85, 0.4)";
+    ctx.lineWidth = 1.2;
     ctx.stroke();
   }
 

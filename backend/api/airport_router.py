@@ -53,6 +53,9 @@ async def get_airports(request: Request, range_nm: float = 100.0) -> List[Dict]:
         return cached["data"]
 
     airports = await _fetch_airports(home_lat, home_lon, float(range_bucket))
+    if airports is None:
+        # Do not cache query failures (e.g. rate limits), return empty list
+        return []
 
     _cache[cache_key] = {"data": airports, "expires": now + CACHE_TTL_SEC}
     return airports
@@ -65,7 +68,7 @@ async def _fetch_airports(
     home_lat: float,
     home_lon: float,
     range_nm: float,
-) -> List[Dict]:
+) -> List[Dict] | None:
     """
     Query the Overpass API for all aerodrome nodes/ways/relations
     within a bounding box derived from home + range_nm.
@@ -105,7 +108,7 @@ async def _fetch_airports(
             data = resp.json()
     except Exception as exc:
         print(f"[Airports] Overpass query failed: {exc}")
-        return []
+        return None
 
     airports: List[Dict] = []
     for elem in data.get("elements", []):
@@ -116,16 +119,26 @@ async def _fetch_airports(
             continue
 
         tags = elem.get("tags", {})
+        icao = tags.get("icao") or ""
+        iata = tags.get("iata") or ""
+        faa = tags.get("faa") or ""
+
+        # Only show airports with at least one official identifier (large/public airports)
+        if not (icao or iata or faa):
+            continue
+
         name = (
             tags.get("name")
-            or tags.get("icao")
-            or tags.get("iata")
+            or icao
+            or iata
+            or faa
             or "Unknown"
         )
         airports.append(
             {
-                "icao": tags.get("icao") or "",
-                "iata": tags.get("iata") or "",
+                "icao": icao,
+                "iata": iata,
+                "faa": faa,
                 "name": name,
                 "lat": float(lat),
                 "lon": float(lon),

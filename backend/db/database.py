@@ -48,6 +48,17 @@ CREATE INDEX IF NOT EXISTS idx_tracks_time
     ON aircraft_tracks (recorded_at);
 """
 
+CREATE_METADATA_TABLE = """
+CREATE TABLE IF NOT EXISTS aircraft_metadata (
+    icao              TEXT PRIMARY KEY,
+    registration      TEXT,
+    manufacturer      TEXT,
+    model             TEXT,
+    airline           TEXT,
+    updated_at        INTEGER NOT NULL
+);
+"""
+
 
 # ---------------------------------------------------------------------------
 # Database initialisation
@@ -58,6 +69,7 @@ async def init_db() -> None:
         await db.execute(CREATE_TRACKS_TABLE)
         await db.execute(CREATE_IDX_ICAO_TIME)
         await db.execute(CREATE_IDX_TIME)
+        await db.execute(CREATE_METADATA_TABLE)
         await db.commit()
     print(f"[DB] Initialized database at {DB_PATH}")
 
@@ -178,3 +190,49 @@ async def periodic_cleanup(history_hours: int = 1, interval_sec: int = 300) -> N
             await cleanup_old_tracks(history_hours)
         except Exception as exc:
             print(f"[DB] Cleanup error: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# Aircraft metadata cache read/write helpers
+# ---------------------------------------------------------------------------
+async def get_aircraft_metadata(icao: str) -> Optional[Dict[str, Any]]:
+    """Fetch cached extended metadata for a single ICAO hex code."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            """
+            SELECT registration, manufacturer, model, airline, updated_at
+            FROM aircraft_metadata
+            WHERE icao = ?
+            """,
+            (icao.lower().strip(),),
+        )
+        row = await cursor.fetchone()
+        return dict(row) if row else None
+
+
+async def insert_aircraft_metadata(
+    icao: str,
+    registration: Optional[str],
+    manufacturer: Optional[str],
+    model: Optional[str],
+    airline: Optional[str],
+) -> None:
+    """Cache extended aircraft metadata in the database."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """
+            INSERT OR REPLACE INTO aircraft_metadata
+                (icao, registration, manufacturer, model, airline, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                icao.lower().strip(),
+                registration,
+                manufacturer,
+                model,
+                airline,
+                int(time.time()),
+            ),
+        )
+        await db.commit()
