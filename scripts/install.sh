@@ -6,9 +6,11 @@
 
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INSTALL_DIR="/home/pi/pi-radar"
+PI_USER="${SUDO_USER:-$USER}"
+[ -z "$PI_USER" ] || [ "$PI_USER" = "root" ] && PI_USER="pi"
+USER_HOME=$(eval echo ~"$PI_USER")
+INSTALL_DIR="$USER_HOME/pi-radar"
 VENV_DIR="$INSTALL_DIR/venv"
-PI_USER="${SUDO_USER:-pi}"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 
@@ -78,8 +80,19 @@ info "Edit $INSTALL_DIR/config.yaml to set your home coordinates and API keys"
 
 # ── 7. Systemd services ────────────────────────────────────────────────────
 info "Installing systemd services..."
-cp "$INSTALL_DIR/systemd/pi-radar.service"       /etc/systemd/system/
-cp "$INSTALL_DIR/systemd/pi-radar-kiosk.service" /etc/systemd/system/
+
+# Replace user, group and path placeholders to support custom usernames (not just 'pi')
+sed -e "s|User=pi|User=$PI_USER|g" \
+    -e "s|Group=pi|Group=$PI_USER|g" \
+    -e "s|/home/pi/pi-radar|$INSTALL_DIR|g" \
+    "$INSTALL_DIR/systemd/pi-radar.service" > /etc/systemd/system/pi-radar.service
+
+sed -e "s|User=pi|User=$PI_USER|g" \
+    -e "s|Group=pi|Group=$PI_USER|g" \
+    -e "s|/home/pi/pi-radar|$INSTALL_DIR|g" \
+    -e "s|/home/pi/|$USER_HOME/|g" \
+    "$INSTALL_DIR/systemd/pi-radar-kiosk.service" > /etc/systemd/system/pi-radar-kiosk.service
+
 systemctl daemon-reload
 
 systemctl enable dump1090-fa
