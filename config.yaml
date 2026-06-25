@@ -54,8 +54,8 @@ opensky:
 
 fr24feed:
   # Set to true if you have installed fr24feed on the Pi
-  enabled: false
-  sharing_key: "YOUR_FR24_SHARING_KEY_HERE"
+  enabled: true
+  sharing_key: "ccae596de2333c55"
   mlat_enabled: true
 
 display:
