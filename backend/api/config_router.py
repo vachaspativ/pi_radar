@@ -44,6 +44,9 @@ async def get_config(request: Request):
         "development": {
             "use_mock_source": cfg.development.use_mock_source,
         },
+        "display": {
+            "photo_api_url": cfg.display.photo_api_url,
+        },
         "server": {
             "host": cfg.server.host,
             "port": cfg.server.port,

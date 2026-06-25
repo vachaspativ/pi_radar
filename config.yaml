@@ -64,6 +64,8 @@ display:
   # Pi 7" official touchscreen native resolution
   screen_width: 1024
   screen_height: 600
+  # API endpoint for fetching aircraft photos (use {icao} or {registration} placeholders)
+  photo_api_url: "https://api.planespotters.net/pub/photos/hex/{icao}"
 
 server:
   # Bind to 0.0.0.0 to allow access from other devices on your LAN

@@ -25,6 +25,7 @@ const UI = (() => {
   let _replayActive = false;
   const _metaCache  = new Map();
   const _photoCache = new Map();
+  let _photoApiUrl = "";
 
   // ---------------------------------------------------------------------------
   // Public API
@@ -337,13 +338,20 @@ const UI = (() => {
     `;
   }
 
+  function setPhotoApiUrl(url) {
+    _photoApiUrl = url;
+  }
+
   async function _fetchPhoto(icao) {
     if (_photoCache.has(icao)) return;
     _photoCache.set(icao, { loading: true });
     _renderPhoto(icao, { loading: true });
     
+    const urlPattern = _photoApiUrl || "https://api.planespotters.net/pub/photos/hex/{icao}";
+    const url = urlPattern.replace("{icao}", icao);
+    
     try {
-      const resp = await fetch(`https://api.planespotters.net/pub/photos/hex/${icao}`);
+      const resp = await fetch(url);
       if (!resp.ok) {
         _photoCache.delete(icao);
         _renderPhoto(icao, null);
@@ -398,6 +406,7 @@ const UI = (() => {
     filterAircraft,
     setReplayStatus,
     setHomeLabel,
+    setPhotoApiUrl,
     getFilters,
   };
 })();

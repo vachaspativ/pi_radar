@@ -66,6 +66,7 @@ class DisplayConfig(BaseModel):
     kiosk_mode: bool = False
     screen_width: int = 800
     screen_height: int = 480
+    photo_api_url: str = "https://api.planespotters.net/pub/photos/hex/{icao}"
 
 
 class ServerConfig(BaseModel):

@@ -129,6 +129,9 @@
       }
 
       UI.setHomeLabel(_homeLabel);
+      if (cfg.display && cfg.display.photo_api_url) {
+        UI.setPhotoApiUrl(cfg.display.photo_api_url);
+      }
     } catch (e) {
       console.warn("[App] Could not load config from API — using defaults", e);
     }
