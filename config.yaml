@@ -62,8 +62,8 @@ display:
   # Set to true to launch Chromium in full-screen kiosk mode on Pi boot
   kiosk_mode: false
   # Pi 7" official touchscreen native resolution
-  screen_width: 800
-  screen_height: 480
+  screen_width: 1024
+  screen_height: 600
 
 server:
   # Bind to 0.0.0.0 to allow access from other devices on your LAN

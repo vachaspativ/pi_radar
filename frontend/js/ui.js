@@ -24,6 +24,7 @@ const UI = (() => {
   let _onReplayStop = null;
   let _replayActive = false;
   const _metaCache  = new Map();
+  const _photoCache = new Map();
 
   // ---------------------------------------------------------------------------
   // Public API
@@ -150,7 +151,16 @@ const UI = (() => {
       <div class="info-divider"></div>
       <div class="info-row small"><span>First seen</span><span>${Utils.formatTime(ac.first_seen)}</span></div>
       <div class="info-row small"><span>Last seen</span><span>${Utils.formatTime(ac.last_seen)}</span></div>
+      
+      <div id="info-photo-section" style="margin-top: 15px; text-align: center;"></div>
     `;
+
+    const cachedPhoto = _photoCache.get(cleanIcao);
+    if (cachedPhoto) {
+      _renderPhoto(cleanIcao, cachedPhoto);
+    } else {
+      _fetchPhoto(cleanIcao);
+    }
   }
 
   function hideAircraftInfo() {
@@ -324,6 +334,58 @@ const UI = (() => {
       ${meta.manufacturer ? `<div class="info-row"><span>Manufacturer</span><span>${meta.manufacturer}</span></div>` : ""}
       ${meta.model ? `<div class="info-row"><span>Model</span><span>${meta.model}</span></div>` : ""}
       ${meta.registration ? `<div class="info-row"><span>Registration</span><span>${meta.registration}</span></div>` : ""}
+    `;
+  }
+
+  async function _fetchPhoto(icao) {
+    if (_photoCache.has(icao)) return;
+    _photoCache.set(icao, { loading: true });
+    _renderPhoto(icao, { loading: true });
+    
+    try {
+      const resp = await fetch(`https://api.planespotters.net/pub/photos/hex/${icao}`);
+      if (!resp.ok) {
+        _photoCache.delete(icao);
+        _renderPhoto(icao, null);
+        return;
+      }
+      const data = await resp.json();
+      const photo = data.photos && data.photos.length > 0 ? data.photos[0] : null;
+      _photoCache.set(icao, photo);
+      _renderPhoto(icao, photo);
+    } catch (e) {
+      console.warn(`[UI] Failed to fetch photo for ${icao}:`, e);
+      _photoCache.delete(icao);
+      _renderPhoto(icao, null);
+    }
+  }
+
+  function _renderPhoto(icao, photo) {
+    const selected = AircraftRenderer.getSelected();
+    if (!selected || selected.icao.toLowerCase() !== icao) return;
+
+    const photoEl = document.getElementById("info-photo-section");
+    if (!photoEl) return;
+
+    if (photo && photo.loading) {
+      photoEl.innerHTML = `<span style="color: var(--text-dim); font-style: italic; font-size: 11px;">Loading aircraft photo...</span>`;
+      return;
+    }
+
+    if (!photo) {
+      photoEl.innerHTML = "";
+      return;
+    }
+
+    const src = photo.thumbnail_large ? photo.thumbnail_large.src : (photo.thumbnail ? photo.thumbnail.src : null);
+    if (!src) {
+      photoEl.innerHTML = "";
+      return;
+    }
+
+    photoEl.innerHTML = `
+      <img src="${src}" alt="Aircraft Photo" style="max-width: 100%; border-radius: 4px; border: 1px solid rgba(0, 255, 100, 0.3); margin-top: 8px; box-shadow: 0 0 8px rgba(0, 255, 100, 0.15);" />
+      <div style="font-size: 9px; color: var(--text-dim); text-align: right; margin-top: 2px;">Photo by ${photo.photographer || "unknown"}</div>
     `;
   }
 
