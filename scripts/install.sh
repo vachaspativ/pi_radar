@@ -106,13 +106,17 @@ info "Starting Pi Radar backend..."
 systemctl start pi-radar
 
 # ── 8. Optional: fr24feed ─────────────────────────────────────────────────
-read -p "$(echo -e ${YELLOW}Install fr24feed to feed FlightRadar24? [y/N]${NC} )" -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    info "Installing fr24feed..."
-    wget -qO- https://fr24.com/install.sh | bash -s
-    info "Run 'sudo fr24feed --signup' to configure your sharing key"
-    info "Set receiver type=Beast TCP, host=127.0.0.1, port=30005"
+if ! command -v fr24feed &>/dev/null; then
+    read -p "$(echo -e ${YELLOW}Install fr24feed to feed FlightRadar24? [y/N]${NC} )" -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        info "Installing fr24feed..."
+        wget -qO- https://fr24.com/install.sh | bash -s
+        info "Run 'sudo fr24feed --signup' to configure your sharing key"
+        info "Set receiver type=Beast TCP, host=127.0.0.1, port=30005"
+    fi
+else
+    info "fr24feed is already installed — skipping installation"
 fi
 
 # ── 9. Summary ────────────────────────────────────────────────────────────
