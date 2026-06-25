@@ -63,6 +63,7 @@ fi
 info "Copying Pi Radar to $INSTALL_DIR..."
 mkdir -p "$INSTALL_DIR"
 cp -r "$SCRIPT_DIR"/../* "$INSTALL_DIR/"
+chmod +x "$INSTALL_DIR"/scripts/*.sh
 chown -R "$PI_USER:$PI_USER" "$INSTALL_DIR"
 
 # ── 5. Python virtual environment ─────────────────────────────────────────
