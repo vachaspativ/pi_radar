@@ -410,3 +410,15 @@
 .hidden {
   display: none !important;
 }
+
+#go-live-btn {
+  background: var(--accent-live, #00ff41);
+  color: #000;
+  border: 1px solid var(--accent-live, #00ff41);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#go-live-btn:hover {
+  background: #00cc33;
+}

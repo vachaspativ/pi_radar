@@ -46,6 +46,14 @@
   let _sirenInterval = null;
   let _customAudio   = null;
   let _autoSelectedHexes = new Set(); // tracks ICAO hexes we already auto-focused
+  let _liveRawAircraft = []; // store raw live list for later alert re-checks!
+
+  // Replay State
+  let _isReplayMode = false;
+  let _replayPaused = false;
+  let _replayBuckets = [];
+  let _replayIndex = 0;
+  let _replayTimeout = null;
 
 
   // ---------------------------------------------------------------------------
@@ -191,18 +199,22 @@
   function _handleMessage(msg) {
     if (msg.type === "aircraft_update") {
       _aircraft = UI.filterAircraft(msg.aircraft || []);
-      AircraftRenderer.update(_aircraft);
-      AircraftRenderer.draw();
+      _liveRawAircraft = msg.aircraft || [];
       UI.updateStatus(msg);
 
-      // Check alerts for the full set of incoming aircraft (including filtered)
-      _checkAlerts(msg.aircraft || []);
+      if (!_isReplayMode) {
+        AircraftRenderer.update(_aircraft);
+        AircraftRenderer.draw();
 
-      // Refresh selected aircraft info panel if open
-      const sel = AircraftRenderer.getSelected();
-      if (sel) {
-        const updated = _aircraft.find(a => a.icao === sel.icao);
-        if (updated) UI.showAircraftInfo(updated);
+        // Check alerts for the full set of incoming aircraft (including filtered)
+        _checkAlerts(_liveRawAircraft);
+
+        // Refresh selected aircraft info panel if open
+        const sel = AircraftRenderer.getSelected();
+        if (sel) {
+          const updated = _aircraft.find(a => a.icao === sel.icao);
+          if (updated) UI.showAircraftInfo(updated);
+        }
       }
     } else if (msg.type === "pong") {
       // Heartbeat ack
@@ -233,13 +245,12 @@
         const dist = ac.distance_nm;
         const alt = ac.altitude_ft;
 
-        // Condition A: distance < min_distance_nm
-        if (dist < _alertsCfg.proximity.min_distance_nm) {
+        const condA = dist < _alertsCfg.proximity.min_distance_nm;
+        const condB = dist < _alertsCfg.proximity.altitude_distance_nm && alt != null && alt < _alertsCfg.proximity.altitude_threshold_ft;
+
+        if (condA || condB) {
           hasProximity = true;
-        }
-        // Condition B: distance < altitude_distance_nm AND altitude < altitude_threshold_ft
-        else if (dist < _alertsCfg.proximity.altitude_distance_nm && alt != null && alt < _alertsCfg.proximity.altitude_threshold_ft) {
-          hasProximity = true;
+          console.log(`[Alerts] Proximity active for ${ac.callsign || ac.icao}: dist=${dist.toFixed(2)} NM, alt=${alt} ft (Cond A: ${condA}, Cond B: ${condB})`);
         }
       }
     }
@@ -449,9 +460,16 @@
     UI.init({
       onRangeChange:  _onRangeChange,
       onFilterChange: (filters) => {
-        // Re-filter current aircraft and redraw
-        const lastMsg = { aircraft: _aircraft };
-        // We store the full set — re-filter on next WS message
+        // If we are in replay mode, redraw the current bucket with the new filter
+        if (_isReplayMode && _replayBuckets.length > 0) {
+          const idx = Math.max(0, _replayIndex - 1);
+          if (idx < _replayBuckets.length) {
+            const bucket = _replayBuckets[idx];
+            const filtered = UI.filterAircraft(bucket.aircraft || []);
+            AircraftRenderer.update(filtered);
+            AircraftRenderer.draw();
+          }
+        }
       },
       onReplayStart: async () => {
         const nowTs  = Math.floor(Date.now() / 1000);
@@ -460,19 +478,25 @@
         try {
           const resp = await fetch(`/api/replay?from_ts=${fromTs}&to_ts=${nowTs}`);
           const data = await resp.json();
-          _runReplay(data.buckets || []);
+          _startReplay(data.buckets || []);
         } catch (e) {
           UI.setReplayStatus("Error loading history");
         }
       },
+      onReplayPause: () => {
+        _pauseReplay();
+      },
+      onReplayResume: () => {
+        _resumeReplay();
+      },
       onReplayStop: () => {
-        UI.setReplayStatus("Stopped");
+        _stopReplay();
       },
       onMuteChange: (isMuted) => {
         if (isMuted) {
           _stopSiren();
         } else {
-          _checkAlerts(_aircraft);
+          _checkAlerts(_liveRawAircraft);
         }
       }
     });
@@ -492,25 +516,80 @@
   // ---------------------------------------------------------------------------
   // Replay playback
   // ---------------------------------------------------------------------------
-  async function _runReplay(buckets) {
-    if (!buckets.length) {
-      UI.setReplayStatus("No history data");
+  function _tickReplay() {
+    if (!_isReplayMode) return;
+    if (_replayPaused) return;
+
+    if (_replayIndex >= _replayBuckets.length) {
+      _stopReplay();
+      UI.setReplayStatus("Replay complete");
       return;
     }
-    UI.setReplayStatus(`Replaying ${buckets.length} snapshots...`);
 
-    for (let i = 0; i < buckets.length; i++) {
-      const bucket = buckets[i];
-      AircraftRenderer.update(bucket.aircraft || []);
-      AircraftRenderer.draw();
+    const bucket = _replayBuckets[_replayIndex];
+    const filtered = UI.filterAircraft(bucket.aircraft || []);
+    AircraftRenderer.update(filtered);
+    AircraftRenderer.draw();
 
-      const timeStr = Utils.formatTime(bucket.ts);
-      UI.setReplayStatus(`${i + 1}/${buckets.length} — ${timeStr}`);
+    const timeStr = Utils.formatTime(bucket.ts);
+    UI.setReplayStatus(`${_replayIndex + 1}/${_replayBuckets.length} — ${timeStr}`);
 
-      await new Promise(r => setTimeout(r, 200));  // 200ms between frames = ~5x speed
+    _replayIndex++;
+    _replayTimeout = setTimeout(_tickReplay, 200);
+  }
+
+  function _startReplay(buckets) {
+    if (_replayTimeout) clearTimeout(_replayTimeout);
+
+    _isReplayMode = true;
+    _replayPaused = false;
+    _replayBuckets = buckets;
+    _replayIndex = 0;
+
+    // Temporarily clear and disable live alerts during replay to prevent false alarms
+    UI.setProximityAlert(false);
+    UI.setEmergencyAlert(false);
+    UI.showMuteButton(false);
+    _stopSiren();
+
+    UI.showGoLiveButton(true);
+    _tickReplay();
+  }
+
+  function _pauseReplay() {
+    _replayPaused = true;
+    if (_replayTimeout) {
+      clearTimeout(_replayTimeout);
+      _replayTimeout = null;
     }
+    UI.setReplayStatus(`Paused at ${_replayIndex}/${_replayBuckets.length}`);
+  }
 
-    UI.setReplayStatus("Replay complete");
+  function _resumeReplay() {
+    if (!_isReplayMode || !_replayPaused) return;
+    _replayPaused = false;
+    _tickReplay();
+  }
+
+  function _stopReplay() {
+    _isReplayMode = false;
+    _replayPaused = false;
+    if (_replayTimeout) {
+      clearTimeout(_replayTimeout);
+      _replayTimeout = null;
+    }
+    _replayBuckets = [];
+    _replayIndex = 0;
+
+    UI.showGoLiveButton(false);
+    UI.setReplayStatus("Ready");
+
+    // Immediately restore live traffic
+    AircraftRenderer.update(_aircraft);
+    AircraftRenderer.draw();
+
+    // Re-evaluate live alarms
+    _checkAlerts(_liveRawAircraft);
   }
 
   // ---------------------------------------------------------------------------

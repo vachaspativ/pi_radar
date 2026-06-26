@@ -21,10 +21,13 @@ const UI = (() => {
   let _onRangeChange = null;
   let _onFilterChange = null;
   let _onReplayStart = null;
+  let _onReplayPause = null;
+  let _onReplayResume = null;
   let _onReplayStop = null;
   let _onMuteChange = null;
   let _isMuted = false;
   let _replayActive = false;
+  let _replayLoaded = false;
   const _metaCache  = new Map();
   const _photoCache = new Map();
   let _photoApiUrl = "";
@@ -37,6 +40,8 @@ const UI = (() => {
     _onRangeChange  = callbacks.onRangeChange  || (() => {});
     _onFilterChange = callbacks.onFilterChange || (() => {});
     _onReplayStart  = callbacks.onReplayStart  || (() => {});
+    _onReplayPause  = callbacks.onReplayPause  || (() => {});
+    _onReplayResume = callbacks.onReplayResume || (() => {});
     _onReplayStop   = callbacks.onReplayStop   || (() => {});
 
     // Cache DOM elements
@@ -58,6 +63,7 @@ const UI = (() => {
       replayPanel:      document.getElementById("replay-panel"),
       replayPlayBtn:    document.getElementById("replay-play"),
       replayStopBtn:    document.getElementById("replay-stop"),
+      goLiveBtn:        document.getElementById("go-live-btn"),
       replayStatus:     document.getElementById("replay-status"),
       homeLabel:        document.getElementById("home-label"),
       clockEl:          document.getElementById("clock"),
@@ -266,10 +272,16 @@ const UI = (() => {
         if (!_replayActive) {
           _replayActive = true;
           _els.replayPlayBtn.textContent = "⏸ Pause";
-          _onReplayStart();
+          if (!_replayLoaded) {
+            _replayLoaded = true;
+            _onReplayStart();
+          } else {
+            _onReplayResume();
+          }
         } else {
           _replayActive = false;
           _els.replayPlayBtn.textContent = "▶ Play";
+          _onReplayPause();
         }
       });
     }
@@ -278,9 +290,21 @@ const UI = (() => {
     if (_els.replayStopBtn) {
       _els.replayStopBtn.addEventListener("click", () => {
         _replayActive = false;
+        _replayLoaded = false;
         _els.replayPlayBtn.textContent = "▶ Play";
         _onReplayStop();
         setReplayStatus("Stopped");
+      });
+    }
+
+    // Go Live button click
+    if (_els.goLiveBtn) {
+      _els.goLiveBtn.addEventListener("click", () => {
+        _replayActive = false;
+        _replayLoaded = false;
+        if (_els.replayPlayBtn) _els.replayPlayBtn.textContent = "▶ Play";
+        _onReplayStop();
+        setReplayStatus("Ready");
       });
     }
 
@@ -467,6 +491,15 @@ const UI = (() => {
     }
   }
 
+  function showGoLiveButton(visible) {
+    if (!_els.goLiveBtn) return;
+    if (visible) {
+      _els.goLiveBtn.classList.remove("hidden");
+    } else {
+      _els.goLiveBtn.classList.add("hidden");
+    }
+  }
+
   // ---------------------------------------------------------------------------
   return {
     init,
@@ -483,5 +516,6 @@ const UI = (() => {
     showMuteButton,
     isMuted,
     resetMute,
+    showGoLiveButton,
   };
 })();
