@@ -82,6 +82,15 @@ info "Edit $INSTALL_DIR/config.yaml to set your home coordinates and API keys"
 # ── 7. Systemd services ────────────────────────────────────────────────────
 info "Installing systemd services..."
 
+# Load display screen dimensions from config.yaml
+SCREEN_WIDTH="800"
+SCREEN_HEIGHT="480"
+CONFIG_PATH="$INSTALL_DIR/config.yaml"
+if [ -f "$CONFIG_PATH" ]; then
+    SCREEN_WIDTH=$("$VENV_DIR/bin/python" -c "import yaml; print(str(yaml.safe_load(open('$CONFIG_PATH')).get('display', {}).get('screen_width', 800)))" 2>/dev/null || echo "800")
+    SCREEN_HEIGHT=$("$VENV_DIR/bin/python" -c "import yaml; print(str(yaml.safe_load(open('$CONFIG_PATH')).get('display', {}).get('screen_height', 480)))" 2>/dev/null || echo "480")
+fi
+
 # Replace user, group and path placeholders to support custom usernames (not just 'pi')
 sed -e "s|User=pi|User=$PI_USER|g" \
     -e "s|Group=pi|Group=$PI_USER|g" \
@@ -92,6 +101,7 @@ sed -e "s|User=pi|User=$PI_USER|g" \
     -e "s|Group=pi|Group=$PI_USER|g" \
     -e "s|/home/pi/pi-radar|$INSTALL_DIR|g" \
     -e "s|/home/pi/|$USER_HOME/|g" \
+    -e "s|--window-size=800,480|--window-size=$SCREEN_WIDTH,$SCREEN_HEIGHT|g" \
     "$INSTALL_DIR/systemd/pi-radar-kiosk.service" > /etc/systemd/system/pi-radar-kiosk.service
 
 systemctl daemon-reload
