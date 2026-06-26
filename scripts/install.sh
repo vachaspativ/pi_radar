@@ -98,13 +98,29 @@ systemctl daemon-reload
 
 systemctl enable dump1090-fa
 systemctl enable pi-radar
-systemctl enable pi-radar-kiosk
+
+# Determine if kiosk mode should be enabled/started based on config.yaml
+KIOSK_ENABLED="false"
+CONFIG_PATH="$INSTALL_DIR/config.yaml"
+if [ -f "$CONFIG_PATH" ]; then
+    KIOSK_ENABLED=$("$VENV_DIR/bin/python" -c "import yaml; print(str(yaml.safe_load(open('$CONFIG_PATH')).get('display', {}).get('kiosk_mode', False)).lower())" 2>/dev/null || echo "false")
+fi
 
 info "Starting dump1090-fa..."
 systemctl start dump1090-fa || warn "dump1090-fa failed to start — is RTL-SDR connected?"
 
 info "Starting Pi Radar backend..."
 systemctl start pi-radar
+
+if [ "$KIOSK_ENABLED" = "true" ]; then
+    info "Enabling and starting Pi Radar Chromium Kiosk..."
+    systemctl enable pi-radar-kiosk
+    systemctl start pi-radar-kiosk
+else
+    info "Kiosk mode is disabled in config.yaml. Disabling kiosk service..."
+    systemctl disable pi-radar-kiosk || true
+    systemctl stop pi-radar-kiosk || true
+fi
 
 # ── 8. Optional: fr24feed ─────────────────────────────────────────────────
 if ! command -v fr24feed &>/dev/null; then

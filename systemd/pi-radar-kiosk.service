@@ -15,8 +15,9 @@ Environment=XAUTHORITY=/home/pi/.Xauthority
 ExecStartPre=/bin/sleep 4
 ExecStartPre=/bin/sh -c 'until curl -sf http://localhost:8000/ > /dev/null; do sleep 1; done'
 
-ExecStart=/usr/bin/chromium-browser \
+ExecStart=/usr/bin/chromium \
     --kiosk \
+    --user-data-dir=/home/pi/.config/chromium-kiosk \
     --window-size=800,480 \
     --window-position=0,0 \
     --no-sandbox \
