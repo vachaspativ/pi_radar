@@ -60,7 +60,7 @@ fr24feed:
 
 display:
   # Set to true to launch Chromium in full-screen kiosk mode on Pi boot
-  kiosk_mode: false
+  kiosk_mode: true
   # Pi 7" official touchscreen native resolution
   screen_width: 1024
   screen_height: 600
