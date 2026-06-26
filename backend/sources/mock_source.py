@@ -24,7 +24,7 @@ CALLSIGNS = [
     "EIN", "IBE", "THY", "SAS",
 ]
 
-SQUAWKS = ["1200", "2000", "3000", "7000", "0042", "1337", "5012"]
+SQUAWKS = ["1200", "2000", "3000", "7000", "7700", "7600", "7500", "0042", "1337", "5012"]
 
 
 def _random_callsign() -> str:
@@ -50,15 +50,20 @@ class _MockAircraft:
 
         # Spawn at a random position within max_range_nm of home
         angle = random.uniform(0, 360)
-        dist = random.uniform(10, max_range_nm * 0.9)
+        # Allow spawning close to home (from 0.5 NM)
+        dist = random.uniform(0.5, max_range_nm * 0.9)
         self.lat, self.lon = _offset_position(home_lat, home_lon, angle, dist)
 
         # Flight parameters
-        self.altitude_ft = random.choice([
-            random.uniform(1000, 5000),    # low approach / departure
-            random.uniform(15000, 25000),  # mid altitude
-            random.uniform(30000, 42000),  # cruise
-        ])
+        # Occasionally force extremely low altitude (e.g. 500 - 1500 ft) for close flights to trigger warnings
+        if dist < 3.0 and random.random() < 0.5:
+            self.altitude_ft = random.uniform(500, 1800)
+        else:
+            self.altitude_ft = random.choice([
+                random.uniform(1000, 5000),    # low approach / departure
+                random.uniform(15000, 25000),  # mid altitude
+                random.uniform(30000, 42000),  # cruise
+            ])
         self.speed_kts = random.uniform(180, 520)
         self.heading_deg = random.uniform(0, 360)
         self.vertical_rate_fpm = random.uniform(-2000, 2000)

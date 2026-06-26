@@ -22,6 +22,8 @@ const UI = (() => {
   let _onFilterChange = null;
   let _onReplayStart = null;
   let _onReplayStop = null;
+  let _onMuteChange = null;
+  let _isMuted = false;
   let _replayActive = false;
   const _metaCache  = new Map();
   const _photoCache = new Map();
@@ -59,7 +61,13 @@ const UI = (() => {
       replayStatus:     document.getElementById("replay-status"),
       homeLabel:        document.getElementById("home-label"),
       clockEl:          document.getElementById("clock"),
+      muteBtn:          document.getElementById("mute-btn"),
+      emergencyBanner:  document.getElementById("emergency-banner"),
+      radarContainer:   document.getElementById("radar-container"),
+      app:              document.getElementById("app"),
     };
+
+    _onMuteChange = callbacks.onMuteChange || (() => {});
 
     _bindEvents();
     _startClock();
@@ -275,6 +283,21 @@ const UI = (() => {
         setReplayStatus("Stopped");
       });
     }
+
+    // Mute button click
+    if (_els.muteBtn) {
+      _els.muteBtn.addEventListener("click", () => {
+        _isMuted = !_isMuted;
+        if (_isMuted) {
+          _els.muteBtn.classList.add("muted");
+          _els.muteBtn.textContent = "🔇 Siren Muted";
+        } else {
+          _els.muteBtn.classList.remove("muted");
+          _els.muteBtn.textContent = "🔊 Mute Siren";
+        }
+        _onMuteChange(_isMuted);
+      });
+    }
   }
 
   function _startClock() {
@@ -397,6 +420,53 @@ const UI = (() => {
     `;
   }
 
+  function setProximityAlert(active, color) {
+    if (!_els.radarContainer) return;
+    if (active) {
+      _els.radarContainer.classList.add("proximity-alert");
+      if (color) {
+        _els.radarContainer.style.setProperty("--proximity-glow-color", color);
+      }
+    } else {
+      _els.radarContainer.classList.remove("proximity-alert");
+    }
+  }
+
+  function setEmergencyAlert(active, color) {
+    if (!_els.app) return;
+    if (active) {
+      _els.app.classList.add("emergency-alert");
+      if (color) {
+        _els.app.style.setProperty("--emergency-glow-color", color);
+      }
+      if (_els.emergencyBanner) _els.emergencyBanner.classList.remove("hidden");
+    } else {
+      _els.app.classList.remove("emergency-alert");
+      if (_els.emergencyBanner) _els.emergencyBanner.classList.add("hidden");
+    }
+  }
+
+  function showMuteButton(visible) {
+    if (!_els.muteBtn) return;
+    if (visible) {
+      _els.muteBtn.classList.remove("hidden");
+    } else {
+      _els.muteBtn.classList.add("hidden");
+    }
+  }
+
+  function isMuted() {
+    return _isMuted;
+  }
+
+  function resetMute() {
+    _isMuted = false;
+    if (_els.muteBtn) {
+      _els.muteBtn.classList.remove("muted");
+      _els.muteBtn.textContent = "🔊 Mute Siren";
+    }
+  }
+
   // ---------------------------------------------------------------------------
   return {
     init,
@@ -408,5 +478,10 @@ const UI = (() => {
     setHomeLabel,
     setPhotoApiUrl,
     getFilters,
+    setProximityAlert,
+    setEmergencyAlert,
+    showMuteButton,
+    isMuted,
+    resetMute,
   };
 })();

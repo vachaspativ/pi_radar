@@ -73,6 +73,12 @@ To maximize performance on low-power devices like the Raspberry Pi, the radar di
 - **Aircraft Metadata API**: Queries `hexdb.io` for Mode-S hex codes and caches them locally in the `aircraft_metadata` SQLite table for 7 days. It implements negative caching (caching null fields) to prevent spamming the public API for unregistered planes.
 - **UI Metadata Loading**: Implements a `{ loading: true }` cache placeholder in `ui.js` to debounce rapid/parallel requests for the same aircraft Mode-S hex.
 
+### Alerts & Warnings Framework
+- **Emergency transponder warning (Red)**: Trigged by transponder squawk codes in the `alerts.emergency.squawks` config list. Highlights the entire viewport with a pulsing red glow, auto-focuses the emergency aircraft details sidebar using the `AircraftRenderer.selectAircraft` API, and sounds a dual-tone siren.
+- **Siren synthesizer**: Implemented using the browser Web Audio API (sine/triangle oscillators with frequency ramp sweeps) for offline-friendly dual-tone alarm generation without requiring static audio file dependencies (while supporting custom audio file overrides).
+- **Proximity warning (Blue)**: Triggered when aircraft fly under 1.0 NM from home, or under 2.0 NM while flying below 2000 ft. Applies a pulsing blue circular box-shadow around the radar canvases.
+- **Mute latch logic**: A custom mute state button in `ui.js` and `app.js` allows silencing the current siren alarm. The mute latches for active emergencies but resets once all emergency flights clear, ensuring any future/new emergency flights will re-sound the alarm.
+
 ---
 
 ## 4. Key Rules and Constraints
@@ -89,4 +95,4 @@ To maximize performance on low-power devices like the Raspberry Pi, the radar di
 If you are looking to build new features, here are high-priority candidates:
 * **Flight Routes Integration**: Add support for retrieving flight routes (origin/destination airports) based on callsigns. (See Aviationstack/AirLabs API).
 * **Aircraft Photo Pre-fetching**: Fetch and cache planespotters.net thumbnails in the backend database rather than querying the client browser directly.
-* **Audio Alerts**: Implement voice synthesized audio callouts or alarm blips when specific squawk codes (e.g. `7700` Emergency) or close proximity alerts are triggered.
+* **Audio Voice Announcements**: Implement HTML5 Speech Synthesis (`window.speechSynthesis`) to announce incoming aircraft callsigns and emergency alerts aloud (e.g. *"Warning: Southwest 482 emergency transponder active"*).

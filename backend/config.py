@@ -80,6 +80,27 @@ class DevelopmentConfig(BaseModel):
     mock_aircraft_count: int = 18
 
 
+class EmergencyAlertConfig(BaseModel):
+    enabled: bool = True
+    squawks: List[str] = ["7700", "7600", "7500"]
+    siren_volume: float = 0.1
+    audio_file_url: str = ""
+    glow_color: str = "rgba(255, 59, 48, 0.4)"
+
+
+class ProximityAlertConfig(BaseModel):
+    enabled: bool = True
+    min_distance_nm: float = 1.0
+    altitude_distance_nm: float = 2.0
+    altitude_threshold_ft: float = 2000.0
+    glow_color: str = "rgba(0, 191, 255, 0.6)"
+
+
+class AlertsConfig(BaseModel):
+    emergency: EmergencyAlertConfig = Field(default_factory=EmergencyAlertConfig)
+    proximity: ProximityAlertConfig = Field(default_factory=ProximityAlertConfig)
+
+
 # ---------------------------------------------------------------------------
 # Root config model
 # ---------------------------------------------------------------------------
@@ -92,6 +113,7 @@ class AppConfig(BaseModel):
     display: DisplayConfig = Field(default_factory=DisplayConfig)
     server: ServerConfig = Field(default_factory=ServerConfig)
     development: DevelopmentConfig = Field(default_factory=DevelopmentConfig)
+    alerts: AlertsConfig = Field(default_factory=AlertsConfig)
 
 
 # ---------------------------------------------------------------------------

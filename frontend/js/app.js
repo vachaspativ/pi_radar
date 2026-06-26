@@ -36,6 +36,16 @@
   let _wsReconnectDelay = 1000;
   const WS_MAX_DELAY = 30000;
   let _rangeOptions = {};
+  let _alertsCfg    = null;
+
+  // Alert & Audio State
+  let _audioCtx      = null;
+  let _sirenOsc1     = null;
+  let _sirenOsc2     = null;
+  let _sirenGain     = null;
+  let _sirenInterval = null;
+  let _customAudio   = null;
+  let _autoSelectedHexes = new Set(); // tracks ICAO hexes we already auto-focused
 
 
   // ---------------------------------------------------------------------------
@@ -132,6 +142,11 @@
       if (cfg.display && cfg.display.photo_api_url) {
         UI.setPhotoApiUrl(cfg.display.photo_api_url);
       }
+
+      _alertsCfg = cfg.alerts || {
+        emergency: { enabled: true, squawks: ["7700", "7600", "7500"], siren_volume: 0.1, audio_file_url: "", glow_color: "rgba(255, 59, 48, 0.4)" },
+        proximity: { enabled: true, min_distance_nm: 1.0, altitude_distance_nm: 2.0, altitude_threshold_ft: 2000, glow_color: "rgba(0, 191, 255, 0.6)" }
+      };
     } catch (e) {
       console.warn("[App] Could not load config from API — using defaults", e);
     }
@@ -180,6 +195,9 @@
       AircraftRenderer.draw();
       UI.updateStatus(msg);
 
+      // Check alerts for the full set of incoming aircraft (including filtered)
+      _checkAlerts(msg.aircraft || []);
+
       // Refresh selected aircraft info panel if open
       const sel = AircraftRenderer.getSelected();
       if (sel) {
@@ -190,6 +208,166 @@
       // Heartbeat ack
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Alerts & Warning Alarm Sounds
+  // ---------------------------------------------------------------------------
+  function _checkAlerts(aircraftList) {
+    if (!_alertsCfg) return;
+
+    let hasEmergency = false;
+    let hasProximity = false;
+    let emergencyAircraft = null;
+
+    for (const ac of aircraftList) {
+      // 1. Check emergency squawk codes
+      if (_alertsCfg.emergency.enabled && ac.squawk) {
+        if (_alertsCfg.emergency.squawks.includes(ac.squawk)) {
+          hasEmergency = true;
+          emergencyAircraft = ac;
+        }
+      }
+
+      // 2. Check proximity conditions
+      if (_alertsCfg.proximity.enabled && ac.distance_nm != null) {
+        const dist = ac.distance_nm;
+        const alt = ac.altitude_ft;
+
+        // Condition A: distance < min_distance_nm
+        if (dist < _alertsCfg.proximity.min_distance_nm) {
+          hasProximity = true;
+        }
+        // Condition B: distance < altitude_distance_nm AND altitude < altitude_threshold_ft
+        else if (dist < _alertsCfg.proximity.altitude_distance_nm && alt != null && alt < _alertsCfg.proximity.altitude_threshold_ft) {
+          hasProximity = true;
+        }
+      }
+    }
+
+    // Process Proximity visual alerts
+    if (hasProximity) {
+      UI.setProximityAlert(true, _alertsCfg.proximity.glow_color);
+    } else {
+      UI.setProximityAlert(false);
+    }
+
+    // Process Emergency alerts
+    if (hasEmergency) {
+      UI.setEmergencyAlert(true, _alertsCfg.emergency.glow_color);
+      UI.showMuteButton(true);
+
+      // Auto-Select the emergency aircraft if it is a new occurrence
+      if (emergencyAircraft && !_autoSelectedHexes.has(emergencyAircraft.icao)) {
+        _autoSelectedHexes.add(emergencyAircraft.icao);
+        AircraftRenderer.selectAircraft(emergencyAircraft.icao);
+        console.log(`[Alert] Auto-selected emergency aircraft: ${emergencyAircraft.callsign || emergencyAircraft.icao} (Squawk ${emergencyAircraft.squawk})`);
+      }
+
+      // Play Siren (if not muted)
+      if (!UI.isMuted()) {
+        _startSiren();
+      }
+    } else {
+      UI.setEmergencyAlert(false);
+      UI.showMuteButton(false);
+      UI.resetMute(); // reset mute state if all emergencies are resolved
+      _autoSelectedHexes.clear(); // clear auto-selected list once safe
+      _stopSiren();
+    }
+  }
+
+  function _startSiren() {
+    if (UI.isMuted()) return;
+    if (!_alertsCfg || !_alertsCfg.emergency || !_alertsCfg.emergency.enabled) return;
+
+    // Check if custom audio file URL is set
+    const customUrl = _alertsCfg.emergency.audio_file_url;
+    if (customUrl) {
+      if (!_customAudio) {
+        _customAudio = new Audio(customUrl);
+        _customAudio.loop = true;
+        _customAudio.volume = _alertsCfg.emergency.siren_volume || 0.1;
+      }
+      if (_customAudio.paused) {
+        _customAudio.play().catch(e => console.warn("[Audio] Autoplay blocked:", e));
+      }
+      return;
+    }
+
+    // Otherwise, synthesize siren using Web Audio API
+    if (_audioCtx) return;
+
+    try {
+      _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      
+      _sirenOsc1 = _audioCtx.createOscillator();
+      _sirenOsc2 = _audioCtx.createOscillator();
+      _sirenGain = _audioCtx.createGain();
+
+      _sirenOsc1.type = "sine";
+      _sirenOsc1.frequency.setValueAtTime(440, _audioCtx.currentTime);
+
+      _sirenOsc2.type = "triangle";
+      _sirenOsc2.frequency.setValueAtTime(554.37, _audioCtx.currentTime);
+
+      _sirenGain.gain.setValueAtTime(_alertsCfg.emergency.siren_volume || 0.1, _audioCtx.currentTime);
+
+      _sirenOsc1.connect(_sirenGain);
+      _sirenOsc2.connect(_sirenGain);
+      _sirenGain.connect(_audioCtx.destination);
+
+      _sirenOsc1.start();
+      _sirenOsc2.start();
+
+      let high = true;
+      _sirenInterval = setInterval(() => {
+        if (!_audioCtx) return;
+        const now = _audioCtx.currentTime;
+        if (high) {
+          _sirenOsc1.frequency.exponentialRampToValueAtTime(750, now + 0.45);
+          _sirenOsc2.frequency.exponentialRampToValueAtTime(950, now + 0.45);
+        } else {
+          _sirenOsc1.frequency.exponentialRampToValueAtTime(440, now + 0.45);
+          _sirenOsc2.frequency.exponentialRampToValueAtTime(554, now + 0.45);
+        }
+        high = !high;
+      }, 500);
+    } catch (err) {
+      console.error("[Audio] Failed to initialize AudioContext:", err);
+    }
+  }
+
+  function _stopSiren() {
+    if (_customAudio) {
+      _customAudio.pause();
+    }
+    if (_sirenInterval) {
+      clearInterval(_sirenInterval);
+      _sirenInterval = null;
+    }
+    if (_sirenOsc1) {
+      try { _sirenOsc1.stop(); } catch (e) {}
+      _sirenOsc1 = null;
+    }
+    if (_sirenOsc2) {
+      try { _sirenOsc2.stop(); } catch (e) {}
+      _sirenOsc2 = null;
+    }
+    if (_audioCtx) {
+      try { _audioCtx.close(); } catch (e) {}
+      _audioCtx = null;
+    }
+  }
+
+  function _unlockAudio() {
+    if (_audioCtx && _audioCtx.state === "suspended") {
+      _audioCtx.resume();
+    }
+    document.removeEventListener("click", _unlockAudio);
+    document.removeEventListener("touchstart", _unlockAudio);
+  }
+  document.addEventListener("click", _unlockAudio);
+  document.addEventListener("touchstart", _unlockAudio);
 
   // ---------------------------------------------------------------------------
   // Heartbeat — send ping every 30s to keep WS alive through proxies
@@ -290,6 +468,13 @@
       onReplayStop: () => {
         UI.setReplayStatus("Stopped");
       },
+      onMuteChange: (isMuted) => {
+        if (isMuted) {
+          _stopSiren();
+        } else {
+          _checkAlerts(_aircraft);
+        }
+      }
     });
 
     UI.setHomeLabel(_homeLabel);

@@ -4,6 +4,14 @@ Pi Radar is a real-time, green phosphor, radar-style web application for trackin
 
 Developed by **Vachaspati V**. Licensed under the GNU General Public License v3.0 (GPLv3).
 
+### Key Features
+* **Real-time 2D Canvas Radar**: Green phosphor themed stacked canvas rendering that replicates sweeps, compass rings, and aircraft blips efficiently.
+* **OpenStreetMap Integration**: Beautiful interactive base map background.
+* **Automatic Hardware Fallback**: Seamlessly switches from a local RTL-SDR antenna feed (`dump1090-fa`) to the OpenSky Network API, or mock simulator in offline developer mode.
+* **Emergency Transponder Warning**: Siren sound (synthesized locally or using custom MP3s) and full-screen flashing red border when emergency squawks (7700, 7600, 7500) are detected, with automatic flight selection.
+* **Proximity Alerts**: Circular pulsing blue radar frame warning when aircraft fly close by (under 1 NM or low-altitude under 2 NM).
+* **Caching & Photo Fetching**: Caches municipal airports, PlaneSpotters thumbnail images, and flight registration databases.
+
 ---
 
 ## Architecture & Data Flow
@@ -71,6 +79,13 @@ Before running the application on your Pi, you must set up the `config.yaml` fil
 | `fr24feed.sharing_key` | `""` | Your FlightRadar24 feed sharing key. |
 | `development.use_mock_source` | `false` | Set to `false` for live operations. Set to `true` to test locally on Windows with fake aircraft. |
 | `display.photo_api_url` | *(Planespotters URL)* | The API pattern to retrieve actual aircraft photos. |
+| `alerts.emergency.enabled` | `true` | Enables sirens and full-screen flashing warning for emergency transponders. |
+| `alerts.emergency.squawks` | `["7700", "7600", "7500"]` | Squawk codes that trigger the emergency warning. |
+| `alerts.emergency.siren_volume` | `0.1` | Volume of synthesized/custom audio (0.0 to 1.0). |
+| `alerts.proximity.enabled` | `true` | Enables circular blue radar flashing warning for close-proximity flights. |
+| `alerts.proximity.min_distance_nm` | `1.0` | Distance limit (NM) for proximity warning at any altitude. |
+| `alerts.proximity.altitude_distance_nm` | `2.0` | Distance limit (NM) for low-altitude proximity warning. |
+| `alerts.proximity.altitude_threshold_ft` | `2000` | Altitude limit (feet) for low-altitude proximity warning. |
 
 ---
 

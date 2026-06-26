@@ -79,3 +79,26 @@ development:
   use_mock_source: false
   # Number of fake aircraft to simulate
   mock_aircraft_count: 18
+
+alerts:
+  emergency:
+    enabled: true
+    # Transponder squawk codes that trigger the siren alarm:
+    # 7700 (General Emergency), 7600 (Radio Failure), 7500 (Hijack)
+    squawks: ["7700", "7600", "7500"]
+    # Volume of the alarm (0.0 to 1.0)
+    siren_volume: 0.1
+    # Path to custom audio file. If empty, synthesizes siren using Web Audio API (offline-friendly)
+    audio_file_url: ""
+    # Color of the full-screen pulsating emergency alert (red)
+    glow_color: "rgba(255, 59, 48, 0.4)"
+  proximity:
+    enabled: true
+    # Condition 1: Flight is closer than this distance (NM) at any altitude
+    min_distance_nm: 1.0
+    # Condition 2: Flight is closer than this distance (NM)...
+    altitude_distance_nm: 2.0
+    # ...AND altitude is below this threshold (feet)
+    altitude_threshold_ft: 2000
+    # Color of the circular glow around the radar container (blue)
+    glow_color: "rgba(0, 191, 255, 0.6)"

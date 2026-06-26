@@ -413,6 +413,12 @@ const AircraftRenderer = (() => {
     if (_onSelect) _onSelect(nearest);
   }
 
+  function selectAircraft(icao) {
+    _selectedIcao = icao;
+    const ac = _aircraft.find(a => a.icao === icao) || null;
+    if (_onSelect) _onSelect(ac);
+  }
+
   // ---------------------------------------------------------------------------
-  return { init, resize, update, updateAirports, draw, getSelected, clearSelection };
+  return { init, resize, update, updateAirports, draw, getSelected, clearSelection, selectAircraft };
 })();

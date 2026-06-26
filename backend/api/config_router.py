@@ -51,6 +51,22 @@ async def get_config(request: Request):
             "host": cfg.server.host,
             "port": cfg.server.port,
         },
+        "alerts": {
+            "emergency": {
+                "enabled": cfg.alerts.emergency.enabled,
+                "squawks": cfg.alerts.emergency.squawks,
+                "siren_volume": cfg.alerts.emergency.siren_volume,
+                "audio_file_url": cfg.alerts.emergency.audio_file_url,
+                "glow_color": cfg.alerts.emergency.glow_color,
+            },
+            "proximity": {
+                "enabled": cfg.alerts.proximity.enabled,
+                "min_distance_nm": cfg.alerts.proximity.min_distance_nm,
+                "altitude_distance_nm": cfg.alerts.proximity.altitude_distance_nm,
+                "altitude_threshold_ft": cfg.alerts.proximity.altitude_threshold_ft,
+                "glow_color": cfg.alerts.proximity.glow_color,
+            }
+        }
     }
 
 
