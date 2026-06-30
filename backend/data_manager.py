@@ -118,6 +118,10 @@ class DataManager:
         self.last_update: int = 0
         self.aircraft_count: int = 0
 
+    def set_home(self, lat: float, lon: float) -> None:
+        self._home_lat = lat
+        self._home_lon = lon
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------

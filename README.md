@@ -86,6 +86,12 @@ Before running the application on your Pi, you must set up the `config.yaml` fil
 | `alerts.proximity.min_distance_nm` | `1.0` | Distance limit (NM) for proximity warning at any altitude. |
 | `alerts.proximity.altitude_distance_nm` | `2.0` | Distance limit (NM) for low-altitude proximity warning. |
 | `alerts.proximity.altitude_threshold_ft` | `2000` | Altitude limit (feet) for low-altitude proximity warning. |
+| `gps.enabled` | `false` | Enables live location updates from an onboard Raspberry Pi GPS receiver. |
+| `gps.device` | `"/dev/ttyACM0"` | Serial port device name for GPS receiver (direct NMEA serial mode). |
+| `gps.baudrate` | `9600` | Baudrate for direct NMEA serial port communication. |
+| `gps.use_gpsd` | `true` | Set to true to query the local `gpsd` daemon on TCP port 2947 (recommended). |
+| `gps.gpsd_host` | `"127.0.0.1"` | Host address for `gpsd` daemon. |
+| `gps.gpsd_port` | `2947` | Port number for `gpsd` daemon. |
 
 ---
 

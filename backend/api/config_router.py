@@ -79,19 +79,23 @@ async def update_config(update: ConfigUpdate, request: Request):
     """
     cfg = request.app.state.config
     dm = request.app.state.data_manager
+    sm = request.app.state.source_manager
 
-    if update.home_lat is not None:
-        cfg.radar.home_lat = update.home_lat
-        dm._home_lat = update.home_lat
-    if update.home_lon is not None:
-        cfg.radar.home_lon = update.home_lon
-        dm._home_lon = update.home_lon
+    new_lat = update.home_lat if update.home_lat is not None else cfg.radar.home_lat
+    new_lon = update.home_lon if update.home_lon is not None else cfg.radar.home_lon
+
+    if update.home_lat is not None or update.home_lon is not None:
+        cfg.radar.home_lat = new_lat
+        cfg.radar.home_lon = new_lon
+        dm.set_home(new_lat, new_lon)
+        sm.set_home(new_lat, new_lon)
+
     if update.home_label is not None:
         cfg.radar.home_label = update.home_label
     if update.default_range_nm is not None:
         cfg.radar.default_range_nm = update.default_range_nm
     if update.use_mock_source is not None:
         cfg.development.use_mock_source = update.use_mock_source
-        request.app.state.source_manager._dev_mode = update.use_mock_source
+        sm._dev_mode = update.use_mock_source
 
     return {"success": True, "message": "Config updated"}

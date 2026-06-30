@@ -419,6 +419,13 @@ const AircraftRenderer = (() => {
     if (_onSelect) _onSelect(ac);
   }
 
+  function setHome(homeLat, homeLon) {
+    if (_config) {
+      _config.homeLat = homeLat;
+      _config.homeLon = homeLon;
+    }
+  }
+
   // ---------------------------------------------------------------------------
-  return { init, resize, update, updateAirports, draw, getSelected, clearSelection, selectAircraft };
+  return { init, resize, update, updateAirports, draw, getSelected, clearSelection, selectAircraft, setHome };
 })();

@@ -216,6 +216,13 @@
           if (updated) UI.showAircraftInfo(updated);
         }
       }
+    } else if (msg.type === "location_update") {
+      console.log(`[WS] Home location updated dynamically via GPS: ${msg.lat}, ${msg.lon}`);
+      _homeLat = msg.lat;
+      _homeLon = msg.lon;
+      MapRenderer.setHome(_homeLat, _homeLon);
+      AircraftRenderer.setHome(_homeLat, _homeLon);
+      _fetchAirports(_rangeNm);
     } else if (msg.type === "pong") {
       // Heartbeat ack
     }

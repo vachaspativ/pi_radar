@@ -58,6 +58,10 @@ class SourceManager:
         self._last_result: Optional[SourceResult] = None
         self._current_source_name: str = "Initialising"
 
+    def set_home(self, lat: float, lon: float) -> None:
+        self._mock.set_home(lat, lon)
+        self._opensky.set_home(lat, lon)
+
     @property
     def current_source_name(self) -> str:
         return self._current_source_name

@@ -110,6 +110,13 @@ async def lifespan(app: FastAPI):
     app.state.data_manager = dm
     app.state.source_manager = sm
     app.state.ws_manager = ws_mgr
+    app.state.loop = asyncio.get_running_loop()
+
+    # Start GPS Poller
+    from backend.gps_poller import GPSPoller
+    gps_poller = GPSPoller(app)
+    gps_poller.start()
+    app.state.gps_poller = gps_poller
 
     # Start background tasks
     poller_task = asyncio.create_task(polling_loop(app))
@@ -129,6 +136,9 @@ async def lifespan(app: FastAPI):
 
     # ── Shutdown ─────────────────────────────────────────────────────────
     print("[Shutdown] Stopping background tasks...")
+    if hasattr(app.state, "gps_poller"):
+        app.state.gps_poller.stop()
+
     for task in app.state.bg_tasks:
         task.cancel()
     await asyncio.gather(*app.state.bg_tasks, return_exceptions=True)

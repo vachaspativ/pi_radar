@@ -79,6 +79,11 @@ To maximize performance on low-power devices like the Raspberry Pi, the radar di
 - **Proximity warning (Blue)**: Triggered when aircraft fly under 1.0 NM from home, or under 2.0 NM while flying below 2000 ft. Applies a pulsing blue circular box-shadow around the radar canvases.
 - **Mute latch logic**: A custom mute state button in `ui.js` and `app.js` allows silencing the current siren alarm. The mute latches for active emergencies but resets once all emergency flights clear, ensuring any future/new emergency flights will re-sound the alarm.
 
+### Live GPS Centering
+- **GPS Poller**: When `gps.enabled` is set to `true`, `GPSPoller` runs as a background task. It connects to the local `gpsd` daemon over TCP or reads serial NMEA sentences (`$GPRMC`, `$GPGGA`) in an executor thread.
+- **Dynamic Updates**: If a new GPS fix is received and differs significantly from the last home location (> 0.0001 degrees), the poller updates `home_lat` and `home_lon` in the configuration and propagates this change to the `DataManager` and `SourceManager`.
+- **WebSocket Broadcast**: A `location_update` WebSocket message is broadcast to all clients, which dynamically shifts the background map tiles, updates aircraft distance metrics, and triggers a re-fetch of local airports for the new bounding box.
+
 ---
 
 ## 4. Key Rules and Constraints

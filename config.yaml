@@ -102,3 +102,18 @@ alerts:
     altitude_threshold_ft: 2000
     # Color of the circular glow around the radar container (blue)
     glow_color: "rgba(0, 191, 255, 0.6)"
+
+gps:
+  # Enable dynamic location detection from an onboard GPS receiver
+  enabled: false
+  # Serial port device name for GPS receiver (if reading NMEA directly)
+  device: "/dev/ttyACM0"
+  # Serial baudrate (usually 9600 for standard GPS receivers)
+  baudrate: 9600
+  # If true, queries the local gpsd daemon (port 2947) instead of direct serial read.
+  # Preferred on Raspberry Pi with gpsd running.
+  use_gpsd: true
+  # gpsd server host and port details
+  gpsd_host: "127.0.0.1"
+  gpsd_port: 2947
+

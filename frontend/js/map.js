@@ -233,6 +233,13 @@ const MapRenderer = (() => {
     img.src = url;
   }
 
+  function setHome(homeLat, homeLon) {
+    _homeLat = homeLat;
+    _homeLon = homeLon;
+    _zoom    = _calcZoom(_rangeNm, _radius, _homeLat);
+    draw();
+  }
+
   // ---------------------------------------------------------------------------
-  return { init, resize, setRange, draw };
+  return { init, resize, setRange, draw, setHome };
 })();

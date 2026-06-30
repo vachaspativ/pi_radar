@@ -101,6 +101,15 @@ class AlertsConfig(BaseModel):
     proximity: ProximityAlertConfig = Field(default_factory=ProximityAlertConfig)
 
 
+class GPSConfig(BaseModel):
+    enabled: bool = False
+    device: str = "/dev/ttyACM0"
+    baudrate: int = 9600
+    use_gpsd: bool = True
+    gpsd_host: str = "127.0.0.1"
+    gpsd_port: int = 2947
+
+
 # ---------------------------------------------------------------------------
 # Root config model
 # ---------------------------------------------------------------------------
@@ -114,6 +123,8 @@ class AppConfig(BaseModel):
     server: ServerConfig = Field(default_factory=ServerConfig)
     development: DevelopmentConfig = Field(default_factory=DevelopmentConfig)
     alerts: AlertsConfig = Field(default_factory=AlertsConfig)
+    gps: GPSConfig = Field(default_factory=GPSConfig)
+
 
 
 # ---------------------------------------------------------------------------

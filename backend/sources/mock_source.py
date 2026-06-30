@@ -172,6 +172,13 @@ class MockSource(BaseSource):
         self._fleet: List[_MockAircraft] = []
         self._init_fleet()
 
+    def set_home(self, lat: float, lon: float) -> None:
+        self._home_lat = lat
+        self._home_lon = lon
+        for ac in self._fleet:
+            ac._home_lat = lat
+            ac._home_lon = lon
+
     def _init_fleet(self) -> None:
         self._fleet = [
             _MockAircraft(self._home_lat, self._home_lon, self._max_range_nm)

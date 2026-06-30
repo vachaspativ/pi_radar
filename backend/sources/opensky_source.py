@@ -70,6 +70,10 @@ class OpenSkySource(BaseSource):
         self._access_token: Optional[str] = None
         self._token_expires_at: float = 0.0
 
+    def set_home(self, lat: float, lon: float) -> None:
+        self._home_lat = lat
+        self._home_lon = lon
+
     @property
     def name(self) -> str:
         return "Internet (OpenSky Network)"
