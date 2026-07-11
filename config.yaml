@@ -44,8 +44,8 @@ dump1090:
 opensky:
   enabled: true
   # OAuth2 credentials from opensky-network.org → Account → API Clients
-  client_id: "vachaspati@gmail.com-api-client"
-  client_secret: "XNUb6b94pZuelUuxZu1cXo6zSPxBHVuH"
+  client_id: ""
+  client_secret: ""
   # How often to poll OpenSky when in fallback mode (seconds)
   # Keep at 30+ to stay within free-tier rate limits (~4000 credits/day)
   poll_interval_sec: 30
@@ -55,7 +55,7 @@ opensky:
 fr24feed:
   # Set to true if you have installed fr24feed on the Pi
   enabled: true
-  sharing_key: "ccae596de2333c55"
+  sharing_key: ""
   mlat_enabled: true
 
 display:
