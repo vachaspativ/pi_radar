@@ -117,6 +117,23 @@
     }
   }
 
+  async function _handleKioskExit() {
+    const kioskExitBtn = document.getElementById("kiosk-exit-btn");
+    if (kioskExitBtn) {
+      kioskExitBtn.disabled = true;
+      kioskExitBtn.textContent = "Exiting...";
+    }
+    try {
+      const resp = await fetch("/api/config/kiosk/disable", { method: "POST" });
+      const result = await resp.json();
+      if (!result.success) {
+        console.warn("[App] Failed to disable kiosk mode backend-side, but exit triggered");
+      }
+    } catch (e) {
+      console.error("[App] Error calling kiosk disable API:", e);
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Fetch initial config from backend
   // ---------------------------------------------------------------------------
@@ -149,6 +166,14 @@
       UI.setHomeLabel(_homeLabel);
       if (cfg.display && cfg.display.photo_api_url) {
         UI.setPhotoApiUrl(cfg.display.photo_api_url);
+      }
+
+      if (cfg.display && cfg.display.kiosk_mode) {
+        const kioskExitBtn = document.getElementById("kiosk-exit-btn");
+        if (kioskExitBtn) {
+          kioskExitBtn.classList.remove("hidden");
+          kioskExitBtn.addEventListener("click", _handleKioskExit);
+        }
       }
 
       _alertsCfg = cfg.alerts || {

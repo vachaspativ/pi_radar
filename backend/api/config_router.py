@@ -45,6 +45,7 @@ async def get_config(request: Request):
             "use_mock_source": cfg.development.use_mock_source,
         },
         "display": {
+            "kiosk_mode": cfg.display.kiosk_mode,
             "photo_api_url": cfg.display.photo_api_url,
         },
         "server": {
@@ -99,3 +100,49 @@ async def update_config(update: ConfigUpdate, request: Request):
         sm._dev_mode = update.use_mock_source
 
     return {"success": True, "message": "Config updated"}
+
+
+@router.post("/config/kiosk/disable")
+async def disable_kiosk(request: Request):
+    """
+    Disable kiosk mode in config.yaml and stop the kiosk service.
+    """
+    cfg = request.app.state.config
+    cfg.display.kiosk_mode = False
+
+    # Try to rewrite config.yaml using text replacement to preserve comments
+    config_path = None
+    from pathlib import Path
+    candidates = [
+        Path("config.yaml"),
+        Path(__file__).parent.parent.parent / "config.yaml",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            config_path = str(candidate)
+            break
+
+    success = False
+    if config_path:
+        try:
+            import re
+            with open(config_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            new_content, count = re.subn(r"(\bkiosk_mode\s*:\s*)true", r"\1false", content, flags=re.IGNORECASE)
+            if count > 0:
+                with open(config_path, "w", encoding="utf-8") as f:
+                    f.write(new_content)
+                success = True
+        except Exception as e:
+            print(f"[Kiosk] Error writing config.yaml: {e}")
+
+    # Stop the systemd service in the background
+    try:
+        import subprocess
+        # Run systemctl stop as a background process so we can respond to the request first
+        subprocess.Popen(["sudo", "systemctl", "stop", "pi-radar-kiosk"])
+    except Exception as e:
+        print(f"[Kiosk] Error stopping pi-radar-kiosk service: {e}")
+
+    return {"success": success, "message": "Kiosk mode disabled and service stop signal sent."}
+
